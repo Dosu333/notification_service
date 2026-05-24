@@ -51,8 +51,8 @@ class CreateNotificationUseCase:
             template=request.template
         )
         
-        # Route message to the correct queue topic based on the channel
-        topic = f"{request.channel}.queue"
+        # Prepare outbox event for eventual consistency
+        topic = "notification.events"
         outbox_payload = {
             "notification_id": str(notification.id),
             "user_id": notification.user_id,
@@ -66,6 +66,7 @@ class CreateNotificationUseCase:
             payload=outbox_payload
         )
 
+        # Atomic save of both notification and outbox event
         self.unit_of_work.commit_notification_and_outbox(
             notification=notification, 
             outbox_event=outbox_event
