@@ -60,11 +60,10 @@ class SendChannelNotificationUseCase:
             else:
                 raise ValueError(f"Unsupported channel or missing provider setup for: {notification.channel}")
 
-            notification.mark_as_sent(provider_name=provider_name)
-            
-            # TODO: Add a `provider_message_id` column 
-            # to DB and pure entity to store this ID for webhook reconciliation.
-            # notification.provider_message_id = provider_message_id 
+            notification.mark_as_sent(
+                provider_name=provider_name,
+                provider_message_id=provider_message_id
+            )
             
             self.notification_repo.update(notification)
             logger.info(f"Successfully dispatched notification {notification_id} via {provider_name}.")

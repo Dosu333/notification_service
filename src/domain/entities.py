@@ -14,6 +14,7 @@ class Notification:
     template: Optional[str] = None
     status: str = "PENDING"
     provider: Optional[str] = None
+    provider_message_id: Optional[str] = None
     scheduled_at: Optional[datetime] = None
     sent_at: Optional[datetime] = None
     delivered_at: Optional[datetime] = None
@@ -22,10 +23,10 @@ class Notification:
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
 
-    def mark_as_sent(self, provider_name: str):
-        """Business rule: Update state when sent"""
+    def mark_as_sent(self, provider_name: str, provider_message_id: Optional[str] = None):
         self.status = "SENT"
-        self.provider = provider_name
+        self.provider_name = provider_name
+        self.provider_message_id = provider_message_id
         self.sent_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
 

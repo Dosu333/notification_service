@@ -18,6 +18,7 @@ class NotificationModel(Base):
     payload = Column(JSONB, nullable=False)
     status = Column(String(20), nullable=False, default="PENDING")
     provider = Column(String(50))
+    provider_message_id = Column(String, nullable=True, index=True)
     idempotency_key = Column(String(255), unique=True, nullable=False)
     scheduled_at = Column(DateTime, nullable=True)
     sent_at = Column(DateTime, nullable=True)
