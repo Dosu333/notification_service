@@ -20,7 +20,7 @@ class NotificationRepository(ABC):
 class UnitOfWork(ABC):
     """
     Ensures that saving a Notification and an OutboxEvent 
-    happens in the exact same database transaction.
+    happens in the same database transaction.
     """
     @abstractmethod
     def commit_notification_and_outbox(
