@@ -10,7 +10,5 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
-migrations/
-alembic/
 venv/
 .pytest_cache/
