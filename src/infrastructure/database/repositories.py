@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from typing import Optional
@@ -34,6 +35,31 @@ class SqlAlchemyNotificationRepository(NotificationRepository):
     def get_by_idempotency_key(self, key: str) -> Optional[Notification]:
         """Fetches DB model and maps it back to a pure domain entity."""
         model = self.session.query(NotificationModel).filter_by(idempotency_key=key).first()
+        
+        if not model:
+            return None
+
+        return Notification(
+            id=model.id,
+            user_id=model.user_id,
+            channel=model.channel,
+            template=model.template,
+            payload=model.payload,
+            status=model.status,
+            provider=model.provider,
+            idempotency_key=model.idempotency_key,
+            scheduled_at=model.scheduled_at,
+            sent_at=model.sent_at,
+            delivered_at=model.delivered_at,
+            failed_at=model.failed_at,
+            retry_count=model.retry_count,
+            created_at=model.created_at,
+            updated_at=model.updated_at
+        )
+    
+    def get_by_id(self, notification_id: uuid.UUID) -> Optional[Notification]:
+        """Fetches DB model by ID and maps it back to a pure domain entity."""
+        model = self.session.query(NotificationModel).filter_by(id=notification_id).first()
         
         if not model:
             return None

@@ -1,3 +1,4 @@
+import uuid
 from abc import ABC, abstractmethod
 from typing import Optional
 from src.domain.entities import Notification, OutboxEvent
@@ -10,6 +11,10 @@ class NotificationRepository(ABC):
 
     @abstractmethod
     def get_by_idempotency_key(self, key: str) -> Optional[Notification]:
+        pass
+    
+    @abstractmethod
+    def get_by_id(self, notification_id: uuid.UUID) -> Optional[Notification]:
         pass
 
     @abstractmethod
