@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 from src.infrastructure.database.repositories import SqlAlchemyNotificationRepository, SqlAlchemyUnitOfWork
 from src.use_cases.create_notification import CreateNotificationUseCase
+from src.use_cases.handle_delivery_receipt import HandleDeliveryReceiptUseCase
 
 
 load_dotenv()
@@ -26,3 +27,9 @@ def get_create_notification_use_case(db = Depends(get_db)) -> CreateNotification
     repo = SqlAlchemyNotificationRepository(db)
     uow = SqlAlchemyUnitOfWork(db)
     return CreateNotificationUseCase(notification_repo=repo, unit_of_work=uow)
+
+
+def get_webhook_use_case(db = Depends(get_db)) -> HandleDeliveryReceiptUseCase:
+    """Assembles the HandleDeliveryReceiptUseCase with its concrete repository."""
+    repo = SqlAlchemyNotificationRepository(db)
+    return HandleDeliveryReceiptUseCase(notification_repo=repo)
