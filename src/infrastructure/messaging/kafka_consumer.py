@@ -4,6 +4,7 @@ import uuid
 from typing import Dict, Any, Callable, Optional
 from confluent_kafka import Consumer, KafkaError
 from src.interfaces.messaging import MessageConsumer, MessageBroker
+from src.interfaces.metrics import MetricsService
 from src.infrastructure.observability.logger import set_correlation_id
 
 
@@ -16,7 +17,8 @@ class KafkaMessageConsumer(MessageConsumer):
         bootstrap_servers: str, 
         group_id: str,
         dlq_broker: Optional[MessageBroker] = None,
-        dlq_topic: str = "notification.dlq"
+        dlq_topic: str = "notification.dlq",
+        metrics_service: Optional[MetricsService] = None
     ):
         conf = {
             'bootstrap.servers': bootstrap_servers,
@@ -27,9 +29,16 @@ class KafkaMessageConsumer(MessageConsumer):
         self.consumer = Consumer(conf)
         self.dlq_broker = dlq_broker
         self.dlq_topic = dlq_topic
+        self.metrics_service = metrics_service
 
-    def _send_to_dlq(self, raw_value: str, error_msg: str) -> None:
+    def _send_to_dlq(self, raw_value: str, error_msg: str, topic: str = "unknown") -> None:
         """Helper method to park failed messages safely."""
+        if self.metrics_service:
+            self.metrics_service.increment_counter(
+                metric_name="dlq_messages_total",
+                tags={"topic": topic, "reason": "processing_failure"}
+            )
+
         if not self.dlq_broker:
             logger.warning("No DLQ broker configured. Message is being skipped and dropped permanently.")
             return
