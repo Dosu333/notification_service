@@ -7,6 +7,11 @@ services:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -28,6 +33,71 @@ services:
       - "19092:19092" # Kafka API
       - "18082:18082" # HTTP Proxy
       - "9644:9644"   # Admin API
+  
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: 
+      - ./.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_started
+    command: >
+      sh -c "alembic upgrade head && 
+             uvicorn src.apps.api.main:app --host 0.0.0.0 --port 8000"
+
+  outbox_publisher:
+    build: .
+    env_file: 
+      - ./.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_started
+    command: ["python", "-m", "src.apps.workers.outbox_publisher"]
+
+  dispatcher:
+    build: .
+    env_file: 
+      - ./.env
+    depends_on:
+      - api
+    command: ["python", "-m", "src.apps.workers.dispatcher"]
+
+  sms_worker:
+    build: .
+    env_file: 
+      - ./.env
+    depends_on:
+      - api
+    command: ["python", "-m", "src.apps.workers.sms_worker"]
+
+  email_worker:
+    build: .
+    env_file: 
+      - ./.env
+    depends_on:
+      - api
+    command: ["python", "-m", "src.apps.workers.email_worker"]
+    
+  push_worker:
+    build: .
+    env_file: 
+      - ./.env
+    depends_on:
+      - api
+    command: ["python", "-m", "src.apps.workers.push_worker"]
 
 volumes:
   pg_data:

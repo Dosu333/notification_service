@@ -5,6 +5,7 @@ __pycache__/
 *.log
 *.db
 *.sqlite
+*.json
 *.env
 *.env.*
 .DS_Store

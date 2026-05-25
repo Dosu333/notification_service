@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'notification_engine_api'
+    static_configs:
+      - targets: ['api:8000']
+
+  - job_name: 'notification_engine_workers'
+    static_configs:
+      - targets: 
+        - 'dispatcher:8001'
+        - 'sms_worker:8002'
+        - 'email_worker:8003'
+        - 'push_worker:8004'
