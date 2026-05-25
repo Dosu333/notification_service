@@ -1,5 +1,6 @@
 import os
 import uuid
+import time
 import logging
 from typing import Dict, Any
 from dotenv import load_dotenv
@@ -11,6 +12,7 @@ from src.infrastructure.database.repositories import SqlAlchemyNotificationRepos
 from src.infrastructure.providers.mailgun_email_provider import MailgunEmailProvider
 from src.use_cases.send_channel_notification import SendChannelNotificationUseCase
 from src.infrastructure.observability.logger import configure_json_logging
+from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
 
 
 configure_json_logging()
@@ -36,27 +38,50 @@ def run_email_worker():
         base_url=os.environ.get("MAILGUN_BASE_URL", "https://api.mailgun.net/v3")
     )
 
+    metrics_service = PrometheusMetricsService()
+    
     def handle_message(payload: Dict[str, Any]) -> None:
-        notification_id = uuid.UUID(payload["notification_id"])
+        start_time = time.perf_counter()
+        status = "success"
         
-        with SessionLocal() as db_session:
-            repo = SqlAlchemyNotificationRepository(db_session)
-            use_case = SendChannelNotificationUseCase(
-                notification_repo=repo,
-                email_provider=email_provider
-            )
+        try:
+            notification_id = uuid.UUID(payload["notification_id"])
             
-            use_case.execute(notification_id)
-            db_session.commit()
+            with SessionLocal() as db_session:
+                repo = SqlAlchemyNotificationRepository(db_session)
+                use_case = SendChannelNotificationUseCase(
+                    notification_repo=repo,
+                    email_provider=email_provider
+                )
+                
+                use_case.execute(notification_id)
+                db_session.commit()
+
+        except Exception as e:
+            status = "failed"
+            raise e
+
+        finally:
+            duration = time.perf_counter() - start_time
+            metrics_service.increment_counter(
+                metric_name="notification_processed_total",
+                tags={"channel": "email", "status": status}
+            )
+            metrics_service.record_histogram(
+                metric_name="worker_processing_duration_seconds",
+                value=duration,
+                tags={"channel": "email"}
+            )
 
     consumer = KafkaMessageConsumer(
         bootstrap_servers=kafka_url,
         group_id="email-workers",
         dlq_broker=dlq_broker,
-        dlq_topic="notification.dlq"
+        dlq_topic="notification.dlq",
+        metrics_service=metrics_service
     )
     
-    logger.info("Starting Email Worker Daemon (Powered by Mailgun)...")
+    logger.info("Starting Email Worker Daemon ...")
     consumer.start_consuming(topic="email.queue", handler=handle_message)
 
 
