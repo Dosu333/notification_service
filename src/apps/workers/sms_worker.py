@@ -6,6 +6,7 @@ from typing import Dict, Any
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from prometheus_client import start_http_server
 from src.infrastructure.messaging.kafka_consumer import KafkaMessageConsumer
 from src.infrastructure.messaging.kafka_broker import KafkaMessageBroker
 from src.infrastructure.database.repositories import SqlAlchemyNotificationRepository
@@ -21,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 
 def run_sms_worker():
+    start_http_server(8002)
+    logger.info("Started Prometheus metrics server on port 8002")
+
     load_dotenv()
     kafka_url = os.environ.get("KAFKA_BROKER_URL", "localhost:19092")
     db_url = os.environ.get("DATABASE_URL")
