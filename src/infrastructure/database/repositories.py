@@ -2,9 +2,42 @@ import uuid
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from typing import Optional
-from src.domain.entities import Notification, OutboxEvent
-from src.interfaces.repositories import NotificationRepository, UnitOfWork
-from src.infrastructure.database.models import NotificationModel, OutboxEventModel
+from src.domain.entities import Notification, OutboxEvent,UserPreference
+from src.interfaces.repositories import NotificationRepository, UnitOfWork, UserPreferenceRepository
+from src.infrastructure.database.models import NotificationModel, OutboxEventModel, UserPreferenceModel
+
+
+class SqlAlchemyUserPreferenceRepository(UserPreferenceRepository):
+    def __init__(self, session: Session):
+        self.session = session
+
+    def _to_entity(self, model: UserPreferenceModel) -> UserPreference:
+        return UserPreference(
+            user_id=model.user_id,
+            unsubscribed_channels=model.unsubscribed_channels
+        )
+
+    def _to_model(self, entity: UserPreference) -> UserPreferenceModel:
+        return UserPreferenceModel(
+            user_id=entity.user_id,
+            unsubscribed_channels=entity.unsubscribed_channels
+        )
+
+    def get_by_user_id(self, user_id: str) -> UserPreference:
+        model = self.session.query(UserPreferenceModel).filter_by(user_id=user_id).first()
+        
+        if model:
+            return self._to_entity(model)
+        return UserPreference(user_id=user_id, unsubscribed_channels=[])
+
+    def save(self, preference: UserPreference) -> None:
+        model = self.session.query(UserPreferenceModel).filter_by(user_id=preference.user_id).first()
+        
+        if model:
+            model.unsubscribed_channels = preference.unsubscribed_channels
+        else:
+            new_model = self._to_model(preference)
+            self.session.add(new_model)
 
 
 class SqlAlchemyNotificationRepository(NotificationRepository):

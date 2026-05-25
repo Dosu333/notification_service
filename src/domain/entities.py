@@ -1,8 +1,17 @@
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import List, Dict, Any, Optional
 
+
+@dataclass
+class UserPreference:
+    user_id: str
+    unsubscribed_channels: List[str] = field(default_factory=list)
+
+    def is_unsubscribed(self, channel: str) -> bool:
+        return channel in self.unsubscribed_channels
+    
 
 @dataclass
 class Notification:
