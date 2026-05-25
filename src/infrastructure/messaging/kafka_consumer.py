@@ -1,8 +1,10 @@
 import json
 import logging
+import uuid
 from typing import Dict, Any, Callable, Optional
 from confluent_kafka import Consumer, KafkaError
 from src.interfaces.messaging import MessageConsumer, MessageBroker
+from src.infrastructure.observability.logger import set_correlation_id
 
 
 logger = logging.getLogger(__name__)
@@ -44,12 +46,7 @@ class KafkaMessageConsumer(MessageConsumer):
         except Exception as e:
             logger.critical(f"FATAL: Failed to publish to DLQ. Message lost! Error: {e}")
 
-    def start_consuming(
-        self, 
-        topic: str, 
-        handler: Callable[[Dict[str, Any]], None]
-    ) -> None:
-        
+    def start_consuming(self, topic: str, handler: Callable[[Dict[str, Any]], None]) -> None:
         self.consumer.subscribe([topic])
         logger.info(f"Subscribed to '{topic}' as '{self.consumer.consumer_group}'. Waiting for messages...")
 
@@ -63,16 +60,26 @@ class KafkaMessageConsumer(MessageConsumer):
                     if msg.error().code() != KafkaError._PARTITION_EOF:
                         logger.error(f"Kafka Consumer Error: {msg.error()}")
                     continue
-
+                
+                # Default to a new UUID if no correlation ID is found in headers
+                correlation_id = str(uuid.uuid4()) 
+                
+                if msg.headers():
+                    for key, value in msg.headers():
+                        if key == "x-correlation-id" and value:
+                            correlation_id = value.decode('utf-8')
+                            break
+                
+                # Bind ID to this worker's current execution cycle
+                set_correlation_id(correlation_id)
                 raw_value = msg.value().decode('utf-8')
 
                 try:
                     payload = json.loads(raw_value)
-                    
-                    # Process the message with the provided handler
                     handler(payload)
-
+                    
                     self.consumer.commit(asynchronous=False)
+                    logger.debug(f"Successfully processed and committed message from {topic}.")
 
                 except json.JSONDecodeError as e:
                     logger.error(f"JSON decode error. Routing to DLQ. Error: {e}")
