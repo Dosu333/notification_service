@@ -27,6 +27,7 @@ class KafkaMessageConsumer(MessageConsumer):
             'enable.auto.commit': False      
         }
         self.consumer = Consumer(conf)
+        self.group_id = group_id
         self.dlq_broker = dlq_broker
         self.dlq_topic = dlq_topic
         self.metrics_service = metrics_service
@@ -57,7 +58,7 @@ class KafkaMessageConsumer(MessageConsumer):
 
     def start_consuming(self, topic: str, handler: Callable[[Dict[str, Any]], None]) -> None:
         self.consumer.subscribe([topic])
-        logger.info(f"Subscribed to '{topic}' as '{self.consumer.consumer_group}'. Waiting for messages...")
+        logger.info(f"Subscribed to '{topic}' as '{self.group_id}'. Waiting for messages...")
 
         try:
             while True:

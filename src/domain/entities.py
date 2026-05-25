@@ -22,7 +22,7 @@ class Notification:
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     template: Optional[str] = None
     status: str = "PENDING"
-    provider: Optional[str] = None
+    provider_name: Optional[str] = None
     provider_message_id: Optional[str] = None
     scheduled_at: Optional[datetime] = None
     sent_at: Optional[datetime] = None

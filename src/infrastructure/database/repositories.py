@@ -104,7 +104,7 @@ class SqlAlchemyNotificationRepository(NotificationRepository):
         """Updates an existing notification"""
         self.session.query(NotificationModel).filter_by(id=notification.id).update({
             "status": notification.status,
-            "provider": notification.provider,
+            "provider_name": notification.provider_name,
             "sent_at": notification.sent_at,
             "failed_at": notification.failed_at,
             "delivered_at": notification.delivered_at,
