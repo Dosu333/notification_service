@@ -1,7 +1,10 @@
 import logging
 from dataclasses import dataclass
 from src.interfaces.repositories import NotificationRepository
+from src.infrastructure.observability.logger import configure_json_logging
 
+
+configure_json_logging()
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,10 @@ import logging
 from typing import Dict, Any
 from src.interfaces.messaging import MessageBroker
 from src.interfaces.repositories import UserPreferenceRepository
+from src.infrastructure.observability.logger import configure_json_logging
 
+
+configure_json_logging()
 
 logger = logging.getLogger(__name__)
 

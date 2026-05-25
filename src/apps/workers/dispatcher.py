@@ -8,8 +8,10 @@ from src.infrastructure.messaging.kafka_broker import KafkaMessageBroker
 from src.infrastructure.messaging.kafka_consumer import KafkaMessageConsumer
 from src.infrastructure.database.repositories import SqlAlchemyUserPreferenceRepository
 from src.use_cases.dispatch_notification import DispatchNotificationUseCase
+from src.infrastructure.observability.logger import configure_json_logging
 
 
+configure_json_logging()
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'

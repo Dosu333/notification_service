@@ -10,7 +10,10 @@ from src.infrastructure.messaging.kafka_broker import KafkaMessageBroker
 from src.infrastructure.database.repositories import SqlAlchemyNotificationRepository
 from src.infrastructure.providers.mailgun_email_provider import MailgunEmailProvider
 from src.use_cases.send_channel_notification import SendChannelNotificationUseCase
+from src.infrastructure.observability.logger import configure_json_logging
 
+
+configure_json_logging()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
