@@ -38,6 +38,6 @@ def get_metrics():
 
 
 # Route registration
-app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
-app.include_router(preferences.router, prefix="/preferences", tags=["Preferences"])
-app.include_router(webhooks.router, prefix="/webhooks", tags=["Webhooks"])
+app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
+app.include_router(preferences.router, prefix="/api/v1/preferences", tags=["Preferences"])
+app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
