@@ -27,6 +27,8 @@ class NotificationModel(Base):
     provider_message_id = Column(String, nullable=True, index=True)
     idempotency_key = Column(String(255), unique=True, nullable=False)
     scheduled_at = Column(DateTime, nullable=True)
+    recurrence_rule = Column(String(100), nullable=True)
+    timezone = Column(String(50), default="UTC", nullable=False)
     sent_at = Column(DateTime, nullable=True)
     delivered_at = Column(DateTime, nullable=True)
     failed_at = Column(DateTime, nullable=True)

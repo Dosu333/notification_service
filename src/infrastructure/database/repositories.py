@@ -55,7 +55,15 @@ class SqlAlchemyNotificationRepository(NotificationRepository):
             status=model.status,
             retry_count=model.retry_count,
             provider_name=model.provider_name,
-            provider_message_id=model.provider_message_id
+            provider_message_id=model.provider_message_id,
+            scheduled_at=model.scheduled_at,
+            recurrence_rule=model.recurrence_rule,
+            timezone=model.timezone,
+            sent_at=model.sent_at,
+            delivered_at=model.delivered_at,
+            failed_at=model.failed_at,
+            created_at=model.created_at,
+            updated_at=model.updated_at
         )
 
     def _to_model(self, entity: Notification) -> NotificationModel:
@@ -69,7 +77,15 @@ class SqlAlchemyNotificationRepository(NotificationRepository):
             status=entity.status,
             retry_count=entity.retry_count,
             provider_name=entity.provider_name,
-            provider_message_id=entity.provider_message_id
+            provider_message_id=entity.provider_message_id,
+            scheduled_at=entity.scheduled_at,
+            recurrence_rule=entity.recurrence_rule,
+            timezone=entity.timezone,
+            sent_at=entity.sent_at,
+            delivered_at=entity.delivered_at,
+            failed_at=entity.failed_at,
+            created_at=entity.created_at,
+            updated_at=entity.updated_at
         )
         
     def save(self, notification: Notification) -> None:
@@ -105,6 +121,9 @@ class SqlAlchemyNotificationRepository(NotificationRepository):
         self.session.query(NotificationModel).filter_by(id=notification.id).update({
             "status": notification.status,
             "provider_name": notification.provider_name,
+            "scheduled_at": notification.scheduled_at,
+            "recurrence_rule": notification.recurrence_rule,
+            "timezone": notification.timezone,
             "sent_at": notification.sent_at,
             "failed_at": notification.failed_at,
             "delivered_at": notification.delivered_at,

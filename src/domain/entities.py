@@ -25,12 +25,18 @@ class Notification:
     provider_name: Optional[str] = None
     provider_message_id: Optional[str] = None
     scheduled_at: Optional[datetime] = None
+    recurrence_rule: Optional[str] = None
+    timezone: str = "UTC"
     sent_at: Optional[datetime] = None
     delivered_at: Optional[datetime] = None
     failed_at: Optional[datetime] = None
     retry_count: int = 0
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
+    
+    def mark_as_scheduled(self):
+        self.status = "SCHEDULED"
+        self.updated_at = datetime.utcnow()
 
     def mark_as_sent(self, provider_name: str, provider_message_id: Optional[str] = None):
         self.status = "SENT"
