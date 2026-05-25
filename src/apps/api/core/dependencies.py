@@ -8,6 +8,7 @@ from src.use_cases.create_notification import CreateNotificationUseCase
 from src.use_cases.handle_delivery_receipt import HandleDeliveryReceiptUseCase
 from src.use_cases.update_preferences import UpdatePreferencesUseCase
 from src.infrastructure.database.repositories import SqlAlchemyUserPreferenceRepository
+from src.use_cases.cancel_notification import CancelNotificationUseCase
 
 
 load_dotenv()
@@ -41,3 +42,10 @@ def get_update_preferences_use_case(db = Depends(get_db)) -> UpdatePreferencesUs
     """Assembles the UpdatePreferencesUseCase with its concrete repository."""
     repo = SqlAlchemyUserPreferenceRepository(db)
     return UpdatePreferencesUseCase(user_preference_repo=repo)
+
+
+def get_cancel_notification_use_case(db = Depends(get_db)) -> CancelNotificationUseCase:
+    """Assembles the CancelNotificationUseCase with its concrete repository."""
+    repo = SqlAlchemyNotificationRepository(db)
+    uow = SqlAlchemyUnitOfWork(db, repo)
+    return CancelNotificationUseCase(notification_repo=repo, unit_of_work=uow)

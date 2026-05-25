@@ -22,6 +22,10 @@ class NotificationRepository(ABC):
     @abstractmethod
     def save(self, notification: Notification) -> None:
         pass
+    
+    @abstractmethod
+    def get_by_provider_message_id(self, provider_message_id: str) -> Optional[Notification]:
+        pass
 
     @abstractmethod
     def get_by_idempotency_key(self, key: str) -> Optional[Notification]:
@@ -29,6 +33,11 @@ class NotificationRepository(ABC):
     
     @abstractmethod
     def get_by_id(self, notification_id: uuid.UUID) -> Optional[Notification]:
+        pass
+    
+    @abstractmethod
+    def get_all_scheduled(self) -> list[Notification]:
+        """Fetches all notifications waiting to be fired."""
         pass
 
     @abstractmethod

@@ -85,6 +85,17 @@ class Notification:
             self.status = "PENDING"
             self.updated_at = datetime.utcnow()
             return False
+    
+    def cancel(self) -> bool:
+        """
+        A notification can only be cancelled if it is currently scheduled.
+        Returns True if successful, False otherwise.
+        """
+        if self.status == "SCHEDULED":
+            self.status = "CANCELLED"
+            self.updated_at = datetime.utcnow()
+            return True
+        return False
 
 
 @dataclass

@@ -8,6 +8,7 @@ from src.infrastructure.observability.logger import configure_json_logging, set_
 from src.infrastructure.redis.queue import RedisSchedulerQueue
 from src.infrastructure.database.repositories import SqlAlchemyNotificationRepository, SqlAlchemyUnitOfWork
 from src.use_cases.process_scheduled_notification import ProcessScheduledNotificationUseCase
+from src.use_cases.bootstrap_scheduler import BootstrapSchedulerUseCase
 
 
 configure_json_logging()
@@ -24,6 +25,13 @@ def run_scheduler():
     
     # Instantiate Scheduler Queue
     queue = RedisSchedulerQueue(redis_url)
+    
+    logger.info("Running Disaster Recovery Bootstrapper...")
+    with SessionLocal() as session:
+        repo = SqlAlchemyNotificationRepository(session)
+        bootstrapper = BootstrapSchedulerUseCase(repo, queue)
+        restored_count = bootstrapper.execute()
+        logger.info(f"Successfully bootstrapped {restored_count} notifications into Redis.")
 
     logger.info("Starting Scheduler Daemon...")
 

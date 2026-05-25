@@ -116,6 +116,11 @@ class SqlAlchemyNotificationRepository(NotificationRepository):
             return self._to_entity(model)
         return None
 
+    def get_all_scheduled(self) -> list[Notification]:
+        """Fetches all notifications waiting to be fired."""
+        models = self.session.query(NotificationModel).filter_by(status="SCHEDULED").all()
+        return [self._to_entity(model) for model in models]
+
     def update(self, notification: Notification) -> None:
         """Updates an existing notification"""
         self.session.query(NotificationModel).filter_by(id=notification.id).update({

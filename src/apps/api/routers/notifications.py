@@ -3,6 +3,8 @@ from fastapi.responses import JSONResponse
 from src.apps.api.schemas.requests import CreateNotificationSchema 
 from src.apps.api.core.dependencies import get_create_notification_use_case
 from src.use_cases.create_notification import CreateNotificationUseCase, CreateNotificationRequest
+from src.use_cases.cancel_notification import CancelNotificationUseCase
+from src.apps.api.core.dependencies import get_cancel_notification_use_case
 
 
 router = APIRouter()
@@ -37,4 +39,20 @@ def create_notification(
             if "already processed" in response.message
             else status.HTTP_202_ACCEPTED
         )
+    )
+
+
+@router.delete("/{notification_id}", status_code=status.HTTP_200_OK)
+def cancel_scheduled_notification(
+    notification_id: str,
+    use_case: CancelNotificationUseCase = Depends(get_cancel_notification_use_case)
+):
+    success = use_case.execute(notification_id)
+    
+    if success:
+        return {"success": True, "message": "Notification successfully cancelled."}
+    
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"success": False, "message": "Notification not found or cannot be cancelled."}
     )
