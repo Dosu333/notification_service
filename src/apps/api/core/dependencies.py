@@ -9,11 +9,22 @@ from src.use_cases.handle_delivery_receipt import HandleDeliveryReceiptUseCase
 from src.use_cases.update_preferences import UpdatePreferencesUseCase
 from src.infrastructure.database.repositories import SqlAlchemyUserPreferenceRepository
 from src.use_cases.cancel_notification import CancelNotificationUseCase
+from src.infrastructure.redis.queue import RedisSchedulerQueue
+from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
 
 
 load_dotenv()
+
 engine = create_engine(os.environ.get("DATABASE_URL"))
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+metrics_service = PrometheusMetricsService()
+
+
+def get_scheduler() -> RedisSchedulerQueue:
+    """Provides a connection to the Redis Scheduler Queue."""
+    redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
+    return RedisSchedulerQueue(redis_url)
 
 
 def get_db():
@@ -25,11 +36,19 @@ def get_db():
         db.close()
 
 
-def get_create_notification_use_case(db = Depends(get_db)) -> CreateNotificationUseCase:
+def get_create_notification_use_case(
+    db = Depends(get_db),
+    scheduler = Depends(get_scheduler)
+) -> CreateNotificationUseCase:
     """Assembles the Use Case with its infrastructure dependencies."""
     repo = SqlAlchemyNotificationRepository(db)
     uow = SqlAlchemyUnitOfWork(db)
-    return CreateNotificationUseCase(notification_repo=repo, unit_of_work=uow)
+    return CreateNotificationUseCase(
+        notification_repo=repo,
+        unit_of_work=uow,
+        scheduler=scheduler,
+        metrics=metrics_service
+    )
 
 
 def get_webhook_use_case(db = Depends(get_db)) -> HandleDeliveryReceiptUseCase:

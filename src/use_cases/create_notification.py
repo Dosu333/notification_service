@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional
 from src.domain.entities import Notification, OutboxEvent
 from src.interfaces.repositories import NotificationRepository, UnitOfWork
 from src.interfaces.scheduling import NotificationScheduler
+from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
 
 
 @dataclass
@@ -31,11 +32,13 @@ class CreateNotificationUseCase:
         self, 
         notification_repo: NotificationRepository, 
         unit_of_work: UnitOfWork,
-        scheduler: NotificationScheduler
+        scheduler: NotificationScheduler,
+        metrics: PrometheusMetricsService
     ):
         self.notification_repo = notification_repo
         self.unit_of_work = unit_of_work
-        self.scheduler = scheduler
+        self.scheduler = scheduler,
+        self.metrics = metrics
 
     def execute(self, request: CreateNotificationRequest) -> CreateNotificationResponse:
         # Idempotency Check
@@ -70,6 +73,7 @@ class CreateNotificationUseCase:
             # Push to scheduler (e.g., Redis Sorted Set) with the scheduled timestamp as score
             unix_timestamp = notification.scheduled_at.timestamp()
             self.scheduler.schedule(str(notification.id), unix_timestamp)
+            self.metrics.inc_scheduled_registered()
 
             return CreateNotificationResponse(
                 success=True,

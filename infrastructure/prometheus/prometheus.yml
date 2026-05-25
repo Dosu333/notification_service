@@ -13,3 +13,4 @@ scrape_configs:
         - 'sms_worker:8002'
         - 'email_worker:8003'
         - 'push_worker:8004'
+        - 'scheduler_worker:8005'

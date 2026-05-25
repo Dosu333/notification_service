@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Optional
-from prometheus_client import Counter, Histogram
+from prometheus_client import Counter, Histogram, REGISTRY
 from src.interfaces.metrics import MetricsService
 
 
@@ -11,7 +11,32 @@ class PrometheusMetricsService(MetricsService):
     """
     Concrete implementation of MetricsService.
     """
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(PrometheusMetricsService, cls).__new__(cls)
+        return cls._instance
+    
     def __init__(self):
+        if self.__class__._initialized:
+            return
+        
+        metrics_to_clear = [
+            'api_requests',
+            'notifications_processed',
+            'dlq_messages',
+            'api_request_duration_seconds',
+            'scheduled_notifications_registered',
+            'scheduled_notifications_fired',
+            'scheduler_redis_sync_events'
+        ]
+        
+        for collector in list(REGISTRY._collector_to_names.keys()):
+            if hasattr(collector, '_name') and collector._name in metrics_to_clear:
+                REGISTRY.unregister(collector)
+
         self._api_requests_total = Counter(
             "api_requests_total", 
             "Total HTTP requests received", 
@@ -46,6 +71,20 @@ class PrometheusMetricsService(MetricsService):
             "api_request_duration_seconds": self._api_request_duration_seconds,
             "worker_processing_duration_seconds": self._worker_processing_duration_seconds
         }
+        self.scheduled_registered = Counter(
+            'scheduled_notifications_registered_total',
+            'Total number of future notifications saved to Postgres'
+        )
+        self.scheduled_fired = Counter(
+            'scheduled_notifications_fired_total',
+            'Total number of scheduled notifications triggered by Redis'
+        )
+        self.redis_sync_events = Counter(
+            'scheduler_redis_sync_events',
+            'Total number of scheduled items synced into Redis during Bootstrapping'
+        )
+        
+        self.__class__._initialized = True
 
     def increment_counter(
         self, 
@@ -76,3 +115,12 @@ class PrometheusMetricsService(MetricsService):
                 logger.warning(f"Attempted to record unregistered histogram: {metric_name}")
         except Exception as e:
             logger.error(f"Failed to record Prometheus histogram {metric_name}: {e}")
+    
+    def inc_scheduled_registered(self):
+        self.scheduled_registered.inc()
+
+    def inc_scheduled_fired(self):
+        self.scheduled_fired.inc()
+
+    def inc_redis_sync(self, count: int):
+        self.redis_sync_events.inc(count)

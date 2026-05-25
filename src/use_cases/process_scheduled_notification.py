@@ -2,6 +2,7 @@ import uuid
 from src.domain.entities import OutboxEvent
 from src.interfaces.repositories import NotificationRepository, UnitOfWork
 from src.use_cases.create_notification import NotificationScheduler
+from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
 
 
 class ProcessScheduledNotificationUseCase:
@@ -9,11 +10,13 @@ class ProcessScheduledNotificationUseCase:
         self, 
         repo: NotificationRepository, 
         unit_of_work: UnitOfWork,
-        scheduler: NotificationScheduler
+        scheduler: NotificationScheduler,
+        metrics: PrometheusMetricsService
     ):
         self.repo = repo
         self.unit_of_work = unit_of_work
         self.scheduler = scheduler
+        self.metrics = metrics
 
     def execute(self, notification_id_str: str, correlation_id: str) -> bool:
         notification_id = uuid.UUID(notification_id_str)
@@ -47,5 +50,6 @@ class ProcessScheduledNotificationUseCase:
         if is_recurring:
             next_timestamp = notification.scheduled_at.timestamp()
             self.scheduler.schedule(str(notification.id), next_timestamp)
-
+            
+        self.metrics.inc_scheduled_fired()
         return True
