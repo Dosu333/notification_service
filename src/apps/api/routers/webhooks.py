@@ -44,10 +44,10 @@ async def mailgun_webhook(
 ):
     payload = await request.json()
     event_data = payload.get("event-data", {})
-    
+
     message_id = event_data.get("message", {}).get("headers", {}).get("message-id", "")
     event_type = event_data.get("event", "")
-    
+
     domain_status = "SENT"
     if event_type == "delivered":
         domain_status = "DELIVERED"
@@ -60,6 +60,6 @@ async def mailgun_webhook(
         provider_name="MAILGUN",
         error_details=str(event_data.get("delivery-status", {}).get("message", ""))
     )
-    
+
     use_case.execute(receipt)
     return Response(status_code=status.HTTP_200_OK)

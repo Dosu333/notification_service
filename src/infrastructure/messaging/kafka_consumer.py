@@ -3,10 +3,7 @@ import logging
 from typing import Dict, Any, Callable, Optional
 from confluent_kafka import Consumer, KafkaError
 from src.interfaces.messaging import MessageConsumer, MessageBroker
-from src.infrastructure.observability.logger import configure_json_logging
 
-
-configure_json_logging()
 
 logger = logging.getLogger(__name__)
 

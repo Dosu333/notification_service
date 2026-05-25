@@ -2,10 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import List
 from src.interfaces.repositories import UserPreferenceRepository
-from src.infrastructure.observability.logger import configure_json_logging
 
-
-configure_json_logging()
 
 logger = logging.getLogger(__name__)
 

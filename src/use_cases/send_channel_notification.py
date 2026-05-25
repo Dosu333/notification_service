@@ -3,10 +3,7 @@ import uuid
 from typing import Optional
 from src.interfaces.repositories import NotificationRepository
 from src.interfaces.providers import EmailProvider, SMSProvider, PushProvider, ProviderError
-from src.infrastructure.observability.logger import configure_json_logging
 
-
-configure_json_logging()
 
 logger = logging.getLogger(__name__)
 

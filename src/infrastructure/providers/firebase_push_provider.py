@@ -9,10 +9,7 @@ from tenacity import (
     retry_if_exception,
 )
 from src.interfaces.providers import PushProvider, ProviderError
-from src.infrastructure.observability.logger import configure_json_logging
 
-
-configure_json_logging()
 
 logger = logging.getLogger(__name__)
 
