@@ -1,11 +1,17 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, Index
+from sqlalchemy import Column, String, Integer, DateTime, Index, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.ext.declarative import declarative_base
 
 
 Base = declarative_base()
+
+
+class UserPreferenceModel(Base):
+    __tablename__ = "user_preferences"
+    user_id = Column(String, primary_key=True, index=True) 
+    unsubscribed_channels = Column(JSON, default=list, nullable=False)
 
 
 class NotificationModel(Base):
