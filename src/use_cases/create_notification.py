@@ -1,8 +1,10 @@
 import uuid
+from datetime import datetime
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
 from src.domain.entities import Notification, OutboxEvent
 from src.interfaces.repositories import NotificationRepository, UnitOfWork
+from src.interfaces.scheduling import NotificationScheduler
 
 
 @dataclass
@@ -12,6 +14,9 @@ class CreateNotificationRequest:
     payload: Dict[str, Any]
     idempotency_key: str
     template: Optional[str] = None
+    scheduled_at: Optional[datetime] = None
+    recurrence_rule: Optional[str] = None
+    timezone: str = "UTC"
 
 
 @dataclass
@@ -25,10 +30,12 @@ class CreateNotificationUseCase:
     def __init__(
         self, 
         notification_repo: NotificationRepository, 
-        unit_of_work: UnitOfWork
+        unit_of_work: UnitOfWork,
+        scheduler: NotificationScheduler
     ):
         self.notification_repo = notification_repo
         self.unit_of_work = unit_of_work
+        self.scheduler = scheduler
 
     def execute(self, request: CreateNotificationRequest) -> CreateNotificationResponse:
         # Idempotency Check
@@ -48,32 +55,51 @@ class CreateNotificationUseCase:
             channel=request.channel,
             payload=request.payload,
             idempotency_key=request.idempotency_key,
-            template=request.template
-        )
-        
-        # Prepare outbox event for eventual consistency
-        topic = "notification.events"
-        outbox_payload = {
-            "notification_id": str(notification.id),
-            "user_id": notification.user_id,
-            "channel": notification.channel,
-            "template": notification.template,
-            "payload": notification.payload
-        }
-        
-        outbox_event = OutboxEvent(
-            topic=topic,
-            payload=outbox_payload
+            template=request.template,
+            scheduled_at=request.scheduled_at,
+            recurrence_rule=request.recurrence_rule,
+            timezone=request.timezone
         )
 
-        # Atomic save of both notification and outbox event
-        self.unit_of_work.commit_notification_and_outbox(
-            notification=notification, 
-            outbox_event=outbox_event
-        )
+        if notification.scheduled_at:
+            notification.mark_as_scheduled()
 
-        return CreateNotificationResponse(
-            success=True,
-            message="Notification successfully queued.",
-            notification_id=notification.id
-        )
+            # Save only the notification to the database
+            self.unit_of_work.commit_notification(notification)
+
+            # Push to scheduler (e.g., Redis Sorted Set) with the scheduled timestamp as score
+            unix_timestamp = notification.scheduled_at.timestamp()
+            self.scheduler.schedule(str(notification.id), unix_timestamp)
+
+            return CreateNotificationResponse(
+                success=True,
+                message="Notification successfully scheduled.",
+                notification_id=notification.id
+            )
+
+        else:
+            topic = "notification.events"
+            outbox_payload = {
+                "notification_id": str(notification.id),
+                "user_id": notification.user_id,
+                "channel": notification.channel,
+                "template": notification.template,
+                "payload": notification.payload
+            }
+            
+            outbox_event = OutboxEvent(
+                topic=topic,
+                payload=outbox_payload
+            )
+
+            # Atomic save of both notification and outbox event
+            self.unit_of_work.commit_notification_and_outbox(
+                notification=notification, 
+                outbox_event=outbox_event
+            )
+
+            return CreateNotificationResponse(
+                success=True,
+                message="Notification successfully queued.",
+                notification_id=notification.id
+            )

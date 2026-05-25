@@ -136,6 +136,16 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
     def __init__(self, session: Session):
         self.session = session
         self.notifications = SqlAlchemyNotificationRepository(session)
+    
+    def commit_notification(self, notification: Notification) -> None:
+        """Commits only the notification to the database."""
+        try:
+            model = self.notifications._to_model(notification)
+            self.session.add(model)
+            self.session.commit()
+        except Exception as e:
+            self.session.rollback()
+            raise e
 
     def commit_notification_and_outbox(
         self, notification: Notification, outbox_event: OutboxEvent

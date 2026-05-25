@@ -42,6 +42,10 @@ class UnitOfWork(ABC):
     happens in the same database transaction.
     """
     @abstractmethod
+    def commit_notification(self, notification: Notification) -> None:
+        pass
+
+    @abstractmethod
     def commit_notification_and_outbox(
         self, notification: Notification, outbox_event: OutboxEvent
     ) -> None:
