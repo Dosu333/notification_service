@@ -2,7 +2,7 @@ import logging
 import uuid
 from typing import Optional
 from src.interfaces.repositories import NotificationRepository
-from src.interfaces.providers import EmailProvider, SMSProvider, ProviderError
+from src.interfaces.providers import EmailProvider, SMSProvider, PushProvider, ProviderError
 
 
 logger = logging.getLogger(__name__)
@@ -13,11 +13,13 @@ class SendChannelNotificationUseCase:
         self,
         notification_repo: NotificationRepository,
         email_provider: Optional[EmailProvider] = None,
-        sms_provider: Optional[SMSProvider] = None
+        sms_provider: Optional[SMSProvider] = None,
+        push_provider: Optional[PushProvider] = None
     ):
         self.notification_repo = notification_repo
         self.email_provider = email_provider
         self.sms_provider = sms_provider
+        self.push_provider = push_provider
 
     def execute(self, notification_id: uuid.UUID) -> None:
         """
@@ -55,6 +57,15 @@ class SendChannelNotificationUseCase:
                 provider_message_id = self.sms_provider.send(
                     phone_number=notification.payload.get("phone_number"),
                     message=notification.payload.get("message")
+                )
+            
+            elif notification.channel == "push" and self.push_provider:
+                provider_name = "FCM_PROVIDER"
+                provider_message_id = self.push_provider.send(
+                    device_token=notification.payload.get("device_token"),
+                    title=notification.payload.get("title"),
+                    body=notification.payload.get("body"),
+                    data=notification.payload.get("data", {})
                 )
                 
             else:
