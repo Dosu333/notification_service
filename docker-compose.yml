@@ -98,6 +98,17 @@ services:
     depends_on:
       - api
     command: ["python", "-m", "src.apps.workers.push_worker"]
+  
+  scheduler_worker:
+    build: .
+    env_file: 
+      - ./.env
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    command: ["python", "-m", "src.apps.workers.scheduler_worker"]
 
 volumes:
   pg_data:
