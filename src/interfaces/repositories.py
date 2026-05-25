@@ -1,7 +1,21 @@
 import uuid
 from abc import ABC, abstractmethod
 from typing import Optional
-from src.domain.entities import Notification, OutboxEvent
+from src.domain.entities import UserPreference, Notification, OutboxEvent
+
+
+class UserPreferenceRepository(ABC):
+    @abstractmethod
+    def get_by_user_id(self, user_id: str) -> UserPreference:
+        """
+        Fetches preferences. If no record exists in the database, 
+        it should return a default UserPreference object.
+        """
+        pass
+    
+    @abstractmethod
+    def save(self, preference: UserPreference) -> None:
+        pass
 
 
 class NotificationRepository(ABC):
