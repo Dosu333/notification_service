@@ -1,7 +1,9 @@
 import uuid
+import pytz
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+from croniter import croniter
 
 
 @dataclass
@@ -51,6 +53,38 @@ class Notification:
         self.failed_at = datetime.utcnow()
         self.retry_count += 1
         self.updated_at = datetime.utcnow()
+    
+    def process_scheduling(self, reference_time: datetime = None) -> bool:
+        """
+        Determines if the notification should be rescheduled 
+        or marked as ready for immediate delivery.
+        Returns True if rescheduled, False if it was a one-off.
+        """
+        if not self.recurrence_rule:
+            self.status = "PENDING"
+            self.updated_at = datetime.utcnow()
+            return False
+
+        if reference_time is None:
+            reference_time = datetime.utcnow()
+
+        tz = pytz.timezone(self.timezone)
+        localized_ref = pytz.utc.localize(reference_time).astimezone(tz)
+
+        try:
+            cron = croniter(self.recurrence_rule, localized_ref)
+            next_time_local = cron.get_next(datetime)
+            next_time_utc = next_time_local.astimezone(pytz.utc).replace(tzinfo=None)
+            
+            self.scheduled_at = next_time_utc
+            self.status = "SCHEDULED"
+            self.updated_at = datetime.utcnow()
+            return True
+            
+        except (ValueError, KeyError):
+            self.status = "PENDING"
+            self.updated_at = datetime.utcnow()
+            return False
 
 
 @dataclass

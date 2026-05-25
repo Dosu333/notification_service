@@ -1,13 +1,13 @@
 import os
 import time
 import logging
-import uuid
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from src.infrastructure.database.models import NotificationModel, OutboxEventModel
 from src.infrastructure.observability.logger import configure_json_logging, set_correlation_id
 from src.infrastructure.redis.queue import RedisSchedulerQueue
+from src.infrastructure.database.repositories import SqlAlchemyNotificationRepository, SqlAlchemyUnitOfWork
+from src.use_cases.process_scheduled_notification import ProcessScheduledNotificationUseCase
 
 
 configure_json_logging()
@@ -22,9 +22,10 @@ def run_scheduler():
     engine = create_engine(db_url)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     
+    # Instantiate Scheduler Queue
     queue = RedisSchedulerQueue(redis_url)
 
-    logger.info("Starting Scheduler Daemon connected to RedisQueue...")
+    logger.info("Starting Scheduler Daemon...")
 
     while True:
         try:
@@ -35,36 +36,18 @@ def run_scheduler():
                 time.sleep(0.5)
                 continue
 
-            notification_id = uuid.UUID(notification_id_str)
-            set_correlation_id(f"sched-{notification_id}")
+            correlation_id = f"sched-{notification_id_str}-{int(current_time)}"
+            set_correlation_id(correlation_id)
             
             with SessionLocal() as session:
-                notification = session.query(NotificationModel).filter_by(id=notification_id).first()
+                repo = SqlAlchemyNotificationRepository(session)
+                uow = SqlAlchemyUnitOfWork(session, repo)
+                use_case = ProcessScheduledNotificationUseCase(repo, uow, queue)
                 
-                if not notification or notification.status != "SCHEDULED":
-                    continue
-
-                outbox_payload = {
-                    "notification_id": str(notification.id),
-                    "user_id": notification.user_id,
-                    "channel": notification.channel,
-                    "template": notification.template,
-                    "payload": notification.payload,
-                    "correlation_id": f"sched-{notification.id}"
-                }
-
-                outbox_event = OutboxEventModel(
-                    topic="notification.events",
-                    payload=outbox_payload,
-                    processed=0
-                )
+                success = use_case.execute(notification_id_str, correlation_id)
                 
-                notification.status = "PENDING"
-
-                session.add(outbox_event)
-                session.commit()
-                
-                logger.info(f"Bridged scheduled notification {notification.id} to the Outbox.")
+                if success:
+                    logger.info(f"Successfully processed scheduled notification {notification_id_str}")
 
         except Exception as e:
             logger.error(f"Error in scheduler loop: {e}")
