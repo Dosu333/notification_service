@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 from src.domain.entities import Notification, OutboxEvent
 from src.interfaces.repositories import NotificationRepository, UnitOfWork
 from src.interfaces.scheduling import NotificationScheduler
-from src.interfaces.providers import IdempotencyProvider
+from src.interfaces.providers import IdempotencyProvider, UserPreferenceProvider
 from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
 
 
@@ -48,13 +48,15 @@ class CreateNotificationUseCase:
         unit_of_work: UnitOfWork,
         scheduler: NotificationScheduler,
         metrics: PrometheusMetricsService,
-        idempotency_provider: IdempotencyProvider 
+        idempotency_provider: IdempotencyProvider ,
+        preference_provider: UserPreferenceProvider
     ):
         self.notification_repo = notification_repo
         self.unit_of_work = unit_of_work
         self.scheduler = scheduler 
         self.metrics = metrics
         self.idempotency_provider = idempotency_provider
+        self.preference_provider = preference_provider
 
     def execute(self, request: CreateNotificationRequest) -> CreateNotificationResponse:
         
@@ -76,6 +78,20 @@ class CreateNotificationUseCase:
                 success=True,
                 message="Notification already processed.",
                 notification_id=existing_notification.id
+            )
+            
+        can_send = self.preference_provider.can_receive(
+            user_id=request.user_id, 
+            channel=request.channel, 
+            template=request.template
+        )
+        
+        if not can_send:
+            return CreateNotificationResponse(
+                success=True,
+                message="Notification suppressed due to user preferences or DND.",
+                status=NotificationStatus.SUPPRESSED,
+                notification_id=None
             )
     
         notification = Notification(
