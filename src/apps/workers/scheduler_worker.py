@@ -8,9 +8,14 @@ from sqlalchemy.pool import NullPool
 from prometheus_client import start_http_server
 from src.infrastructure.observability.logger import configure_json_logging, set_correlation_id
 from src.infrastructure.redis.queue import RedisSchedulerQueue
-from src.infrastructure.database.repositories import SqlAlchemyNotificationRepository, SqlAlchemyUnitOfWork
+from src.infrastructure.database.repositories import (
+    SqlAlchemyNotificationRepository,
+    SqlAlchemyUnitOfWork,
+    SqlAlchemyUserPreferenceRepository
+)
 from src.use_cases.process_scheduled_notification import ProcessScheduledNotificationUseCase
 from src.use_cases.bootstrap_scheduler import BootstrapSchedulerUseCase
+from src.infrastructure.redis.preference_provider import RedisUserPreferenceProvider
 from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
 
 
@@ -59,7 +64,19 @@ def run_scheduler():
             with SessionLocal() as session:
                 repo = SqlAlchemyNotificationRepository(session)
                 uow = SqlAlchemyUnitOfWork(session, repo)
-                use_case = ProcessScheduledNotificationUseCase(repo, uow, queue)
+                pref_repo = SqlAlchemyUserPreferenceRepository(session)
+                
+                pref_provider = RedisUserPreferenceProvider(
+                    redis_url=redis_url, 
+                    db_repo=pref_repo
+                )
+                
+                use_case = ProcessScheduledNotificationUseCase(
+                    notification_repo=repo, 
+                    unit_of_work=uow, 
+                    scheduler=queue,
+                    preference_provider=pref_provider
+                )
                 
                 success = use_case.execute(notification_id_str, correlation_id)
                 
