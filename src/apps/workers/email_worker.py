@@ -76,7 +76,7 @@ def run_email_worker():
         finally:
             duration = time.perf_counter() - start_time
             metrics_service.increment_counter(
-                metric_name="notification_processed_total",
+                metric_name="notifications_processed_total",
                 tags={"channel": "email", "status": status}
             )
             metrics_service.record_histogram(
