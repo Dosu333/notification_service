@@ -2,6 +2,7 @@ import os
 from fastapi import Depends
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 from dotenv import load_dotenv
 from src.infrastructure.database.repositories import SqlAlchemyNotificationRepository, SqlAlchemyUnitOfWork
 from src.use_cases.create_notification import CreateNotificationUseCase
@@ -15,7 +16,11 @@ from src.infrastructure.observability.prometheus_metrics import PrometheusMetric
 
 load_dotenv()
 
-engine = create_engine(os.environ.get("DATABASE_URL"))
+DATABASE_URL = os.environ.get("DATABASE_URL")
+engine = create_engine(
+    DATABASE_URL, 
+    poolclass=NullPool
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 metrics_service = PrometheusMetricsService()

@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 from dotenv import load_dotenv
 from src.infrastructure.database.models import OutboxEventModel
 from src.infrastructure.messaging.kafka_broker import KafkaMessageBroker
@@ -17,7 +18,7 @@ load_dotenv()
 DB_URL = os.environ.get("DATABASE_URL")
 KAFKA_BROKER_URL = os.environ.get("KAFKA_BROKER_URL", "localhost:19092")
 
-engine = create_engine(DB_URL)
+engine = create_engine(DB_URL, poolclass=NullPool)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

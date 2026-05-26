@@ -12,6 +12,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: pgbouncer
+    env_file:
+      - ./.env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    ports:
+      - "6432:6432"
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p ${LISTEN_PORT} -U ${DB_USER}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -73,18 +90,24 @@ services:
     env_file: 
       - ./.env
     depends_on:
-      postgres:
+      pgbouncer:
         condition: service_healthy
       redpanda:
         condition: service_started
     command: ["python", "-m", "src.apps.workers.outbox_publisher"]
+    restart: always
 
   dispatcher:
     build: .
     env_file: 
       - ./.env
     depends_on:
-      - api
+      api:
+        condition: service_started
+      pgbouncer:
+        condition: service_healthy
+      redpanda:
+        condition: service_started
     command: ["python", "-m", "src.apps.workers.dispatcher"]
 
   sms_worker:
@@ -92,7 +115,12 @@ services:
     env_file: 
       - ./.env
     depends_on:
-      - api
+      api:
+        condition: service_started
+      pgbouncer:
+        condition: service_healthy
+      redpanda:
+        condition: service_started
     command: ["python", "-m", "src.apps.workers.sms_worker"]
 
   email_worker:
@@ -100,7 +128,12 @@ services:
     env_file: 
       - ./.env
     depends_on:
-      - api
+      api:
+        condition: service_started
+      pgbouncer:
+        condition: service_healthy
+      redpanda:
+        condition: service_started
     command: ["python", "-m", "src.apps.workers.email_worker"]
     
   push_worker:
@@ -108,7 +141,12 @@ services:
     env_file: 
       - ./.env
     depends_on:
-      - api
+      api:
+        condition: service_started
+      pgbouncer:
+        condition: service_healthy
+      redpanda:
+        condition: service_started
     command: ["python", "-m", "src.apps.workers.push_worker"]
   
   scheduler_worker:
@@ -118,9 +156,12 @@ services:
     depends_on:
       redis:
         condition: service_started
-      postgres:
+      pgbouncer:
         condition: service_healthy
+      redpanda:
+        condition: service_started
     command: ["python", "-m", "src.apps.workers.scheduler_worker"]
+    restart: always
 
 volumes:
   pg_data:

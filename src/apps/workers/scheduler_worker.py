@@ -4,6 +4,7 @@ import logging
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 from prometheus_client import start_http_server
 from src.infrastructure.observability.logger import configure_json_logging, set_correlation_id
 from src.infrastructure.redis.queue import RedisSchedulerQueue
@@ -25,7 +26,7 @@ def run_scheduler():
     db_url = os.environ.get("DATABASE_URL")
     redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
     
-    engine = create_engine(db_url)
+    engine = create_engine(db_url, poolclass=NullPool)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     
     # Instantiate Scheduler Queue

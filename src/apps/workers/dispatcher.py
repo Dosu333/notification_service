@@ -4,6 +4,7 @@ from typing import Dict, Any
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 from prometheus_client import start_http_server
 from src.infrastructure.messaging.kafka_broker import KafkaMessageBroker
 from src.infrastructure.messaging.kafka_consumer import KafkaMessageConsumer
@@ -32,7 +33,7 @@ def run_dispatcher():
     logger.info(f"Starting Dispatcher Daemon connected to {kafka_url}...")
 
     # Create sessions per message to ensure clean transaction boundaries and avoid long-lived sessions
-    engine = create_engine(db_url)
+    engine = create_engine(db_url, poolclass=NullPool)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     # Instantiate Brokers

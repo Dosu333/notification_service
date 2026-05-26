@@ -6,6 +6,7 @@ from typing import Dict, Any
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 from prometheus_client import start_http_server
 from src.infrastructure.messaging.kafka_consumer import KafkaMessageConsumer
 from src.infrastructure.messaging.kafka_broker import KafkaMessageBroker
@@ -45,7 +46,7 @@ def run_email_worker():
     kafka_url = os.environ.get("KAFKA_BROKER_URL", "localhost:19092")
     db_url = os.environ.get("DATABASE_URL")
     
-    engine = create_engine(db_url)
+    engine = create_engine(db_url, poolclass=NullPool)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     dlq_broker = KafkaMessageBroker(bootstrap_servers=kafka_url)
