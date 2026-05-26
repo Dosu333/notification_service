@@ -78,3 +78,13 @@ class RedisUserPreferenceProvider(UserPreferenceProvider):
                 return False
                 
         return True
+    
+    def invalidate_cache(self, user_id: str) -> None:
+        self._ensure_connected()
+        if self.client:
+            try:
+                self.client.delete(f"prefs:{user_id}")
+                logger.info(f"Invalidated Redis preference cache for user {user_id}")
+            except redis.ConnectionError:
+                logger.error("Redis connection lost during cache invalidation.")
+                self.client = None

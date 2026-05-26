@@ -11,6 +11,8 @@ from src.use_cases.update_preferences import UpdatePreferencesUseCase
 from src.infrastructure.database.repositories import SqlAlchemyUserPreferenceRepository
 from src.use_cases.cancel_notification import CancelNotificationUseCase
 from src.infrastructure.redis.queue import RedisSchedulerQueue
+from src.infrastructure.redis.preference_provider import RedisUserPreferenceProvider
+from src.interfaces.providers import UserPreferenceProvider
 from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
 
 
@@ -62,10 +64,23 @@ def get_webhook_use_case(db = Depends(get_db)) -> HandleDeliveryReceiptUseCase:
     return HandleDeliveryReceiptUseCase(notification_repo=repo)
 
 
-def get_update_preferences_use_case(db = Depends(get_db)) -> UpdatePreferencesUseCase:
-    """Assembles the UpdatePreferencesUseCase with its concrete repository."""
+def get_preference_provider(db = Depends(get_db)) -> UserPreferenceProvider:
+    """Provides the Redis preference cache layer, falling back to DB."""
+    redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
+    db_repo = SqlAlchemyUserPreferenceRepository(db)
+    return RedisUserPreferenceProvider(redis_url=redis_url, db_repo=db_repo)
+
+
+def get_update_preferences_use_case(
+    db = Depends(get_db),
+    pref_provider: UserPreferenceProvider = Depends(get_preference_provider)
+) -> UpdatePreferencesUseCase:
+    
     repo = SqlAlchemyUserPreferenceRepository(db)
-    return UpdatePreferencesUseCase(user_preference_repo=repo)
+    return UpdatePreferencesUseCase(
+        user_preference_repo=repo,
+        preference_provider=pref_provider
+    )
 
 
 def get_cancel_notification_use_case(db = Depends(get_db)) -> CancelNotificationUseCase:

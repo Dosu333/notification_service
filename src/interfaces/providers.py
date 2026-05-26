@@ -32,6 +32,11 @@ class UserPreferenceProvider(ABC):
         Evaluates if a user can receive a notification based on DND, channel, and template opt-outs.
         """
         pass
+    
+    @abstractmethod
+    def invalidate_cache(self, user_id: str) -> None:
+        """Instantly removes the user's preference cache from Redis."""
+        pass
 
 
 class EmailProvider(ABC):
