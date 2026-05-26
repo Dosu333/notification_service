@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional
 from src.domain.entities import Notification, OutboxEvent
 from src.interfaces.repositories import NotificationRepository, UnitOfWork
 from src.interfaces.scheduling import NotificationScheduler
+from src.interfaces.providers import IdempotencyProvider
 from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
 
 
@@ -27,21 +28,36 @@ class CreateNotificationResponse:
     notification_id: Optional[uuid.UUID] = None
 
 
+class IdempotencyConflictException(Exception):
+    pass
+
+
 class CreateNotificationUseCase:
     def __init__(
         self, 
         notification_repo: NotificationRepository, 
         unit_of_work: UnitOfWork,
         scheduler: NotificationScheduler,
-        metrics: PrometheusMetricsService
+        metrics: PrometheusMetricsService,
+        idempotency_provider: IdempotencyProvider 
     ):
         self.notification_repo = notification_repo
         self.unit_of_work = unit_of_work
-        self.scheduler = scheduler,
+        self.scheduler = scheduler 
         self.metrics = metrics
+        self.idempotency_provider = idempotency_provider
 
     def execute(self, request: CreateNotificationRequest) -> CreateNotificationResponse:
-        # Idempotency Check
+        
+        # Redis Distributed Lock (Short-Term Protection)
+        if request.idempotency_key:
+            lock_acquired = self.idempotency_provider.acquire_lock(request.idempotency_key)
+            if not lock_acquired:
+                raise IdempotencyConflictException(
+                    f"Request {request.idempotency_key} is currently processing."
+                )
+
+        # Idempotency Check: Database Layer (Long-Term Protection)
         existing_notification = self.notification_repo.get_by_idempotency_key(
             request.idempotency_key
         )
@@ -52,7 +68,7 @@ class CreateNotificationUseCase:
                 message="Notification already processed.",
                 notification_id=existing_notification.id
             )
-
+    
         notification = Notification(
             user_id=request.user_id,
             channel=request.channel,

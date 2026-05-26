@@ -14,6 +14,17 @@ class ProviderError(Exception):
         self.status_code = status_code
 
 
+class IdempotencyProvider(ABC):
+    @abstractmethod
+    def acquire_lock(self, idempotency_key: str, ttl_seconds: int = 86400) -> bool:
+        """
+        Attempts to acquire a lock for the given key.
+        Returns True if the lock was acquired (proceed).
+        Returns False if the lock already exists (halt).
+        """
+        pass
+
+
 class EmailProvider(ABC):
     """Contract for sending Email notifications."""
     
