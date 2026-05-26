@@ -1,3 +1,4 @@
+import os
 import time
 import uuid
 import logging
@@ -13,9 +14,14 @@ class MockSMSProvider(SMSProvider):
     """
     def __init__(self, provider_name: str = "mock_sms_gateway"):
         self.provider_name = provider_name
+        self.chaos_mode = os.environ.get("CHAOS_MODE")
 
     def send(self, phone_number: str, message: str) -> str:
         time.sleep(0.05) 
+        
+        if self.chaos_mode == "503":
+            logger.error(f"[{self.provider_name}] CHAOS MODE: Simulating 503 Service Unavailable")
+            raise Exception("503 Service Unavailable: Upstream Provider Offline")
         
         message_id = f"mock_{uuid.uuid4()}"
         logger.debug(f"[{self.provider_name}] Simulated sending message: {message_id}")

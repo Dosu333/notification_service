@@ -34,6 +34,11 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:latest
@@ -154,8 +159,10 @@ services:
     env_file: 
       - ./.env
     depends_on:
-      redis:
+      api:
         condition: service_started
+      redis:
+        condition: service_healthy
       pgbouncer:
         condition: service_healthy
       redpanda:
