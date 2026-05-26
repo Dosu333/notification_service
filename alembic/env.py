@@ -12,11 +12,11 @@ load_dotenv()
 sys.path.append(os.getcwd())
 
 config = context.config
-db_url = os.environ.get("DATABASE_URL")
+db_url = os.environ.get("MIGRATION_DATABASE_URL")
 
 if not db_url:
-    raise ValueError("DATABASE_URL environment variable is not set!")
-
+    raise ValueError("MIGRATION_DATABASE_URL environment variable is not set!")
+    
 
 config.set_main_option("sqlalchemy.url", db_url)
 target_metadata = Base.metadata
