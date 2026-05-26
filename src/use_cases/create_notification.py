@@ -1,12 +1,20 @@
 import uuid
 from datetime import datetime
 from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, Any, Optional
 from src.domain.entities import Notification, OutboxEvent
 from src.interfaces.repositories import NotificationRepository, UnitOfWork
 from src.interfaces.scheduling import NotificationScheduler
 from src.interfaces.providers import IdempotencyProvider
 from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
+
+
+class NotificationStatus(str, Enum):
+    QUEUED = "QUEUED"
+    SCHEDULED = "SCHEDULED"
+    SUPPRESSED = "SUPPRESSED"
+    ALREADY_PROCESSED = "ALREADY_PROCESSED"
 
 
 @dataclass
@@ -25,6 +33,7 @@ class CreateNotificationRequest:
 class CreateNotificationResponse:
     success: bool
     message: str
+    status: NotificationStatus
     notification_id: Optional[uuid.UUID] = None
 
 

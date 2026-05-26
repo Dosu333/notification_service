@@ -25,6 +25,15 @@ class IdempotencyProvider(ABC):
         pass
 
 
+class UserPreferenceProvider(ABC):
+    @abstractmethod
+    def can_receive(self, user_id: str, channel: str, template: Optional[str] = None) -> bool:
+        """
+        Evaluates if a user can receive a notification based on DND, channel, and template opt-outs.
+        """
+        pass
+
+
 class EmailProvider(ABC):
     """Contract for sending Email notifications."""
     
