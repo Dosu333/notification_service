@@ -11,6 +11,7 @@ from src.infrastructure.messaging.kafka_consumer import KafkaMessageConsumer
 from src.infrastructure.messaging.kafka_broker import KafkaMessageBroker
 from src.infrastructure.database.repositories import SqlAlchemyNotificationRepository
 from src.infrastructure.providers.twilio_sms_provider import TwilioSMSProvider
+from src.infrastructure.providers.mock_provider import MockSMSProvider
 from src.use_cases.send_channel_notification import SendChannelNotificationUseCase
 from src.infrastructure.observability.logger import configure_json_logging
 from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
@@ -19,6 +20,19 @@ from src.infrastructure.observability.prometheus_metrics import PrometheusMetric
 configure_json_logging()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def get_sms_provider():
+    """
+    Factory method to get the appropriate SMS provider based on environment configuration.
+    """
+    if os.environ.get("USE_MOCK_PROVIDERS") == "true":
+        return MockSMSProvider(provider_name="mock_sms_gateway")
+    return TwilioSMSProvider(
+            account_sid=os.environ.get("TWILIO_ACCOUNT_SID", "mock"),
+            auth_token=os.environ.get("TWILIO_AUTH_TOKEN", "mock"),
+            from_number=os.environ.get("TWILIO_FROM_NUMBER", "mock")
+        )
 
 
 def run_sms_worker():
@@ -35,11 +49,7 @@ def run_sms_worker():
 
     # Setup Infrastructure Dependencies
     dlq_broker = KafkaMessageBroker(bootstrap_servers=kafka_url)
-    sms_provider = TwilioSMSProvider(
-        account_sid=os.environ.get("TWILIO_ACCOUNT_SID", "mock"),
-        auth_token=os.environ.get("TWILIO_AUTH_TOKEN", "mock"),
-        from_number=os.environ.get("TWILIO_FROM_NUMBER", "mock")
-    )
+    sms_provider = get_sms_provider()
     
     # Instantiate metrics service
     metrics_service = PrometheusMetricsService()

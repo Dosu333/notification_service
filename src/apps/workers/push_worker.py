@@ -11,6 +11,7 @@ from src.infrastructure.messaging.kafka_consumer import KafkaMessageConsumer
 from src.infrastructure.messaging.kafka_broker import KafkaMessageBroker
 from src.infrastructure.database.repositories import SqlAlchemyNotificationRepository
 from src.infrastructure.providers.firebase_push_provider import FirebasePushProvider
+from src.infrastructure.providers.mock_provider import MockPushProvider
 from src.use_cases.send_channel_notification import SendChannelNotificationUseCase
 from src.infrastructure.observability.logger import configure_json_logging
 from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
@@ -20,6 +21,16 @@ configure_json_logging()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def get_push_provider():
+    """
+    Factory method to get the appropriate Push provider based on environment configuration.
+    """
+    if os.environ.get("USE_MOCK_PROVIDERS") == "true":
+        return MockPushProvider(provider_name="mock_push_gateway")
+    service_account_path = os.environ.get("FIREBASE_CREDENTIALS_PATH", "firebase-service-account.json")
+    return FirebasePushProvider(service_account_path=service_account_path)
 
 
 def run_push_worker():
@@ -34,10 +45,7 @@ def run_push_worker():
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     dlq_broker = KafkaMessageBroker(bootstrap_servers=kafka_url)
-    
-    # Initialize Firebase Push Provider with service account credentials
-    service_account_path = os.environ.get("FIREBASE_CREDENTIALS_PATH", "firebase-service-account.json")
-    push_provider = FirebasePushProvider(service_account_path=service_account_path)
+    push_provider = get_push_provider()
     
     # Instantiate metrics service
     metrics_service = PrometheusMetricsService()

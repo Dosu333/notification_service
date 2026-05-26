@@ -11,6 +11,7 @@ from src.infrastructure.messaging.kafka_consumer import KafkaMessageConsumer
 from src.infrastructure.messaging.kafka_broker import KafkaMessageBroker
 from src.infrastructure.database.repositories import SqlAlchemyNotificationRepository
 from src.infrastructure.providers.mailgun_email_provider import MailgunEmailProvider
+from src.infrastructure.providers.mock_provider import MockEmailProvider
 from src.use_cases.send_channel_notification import SendChannelNotificationUseCase
 from src.infrastructure.observability.logger import configure_json_logging
 from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
@@ -20,6 +21,20 @@ configure_json_logging()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def get_email_provider():
+    """
+    Factory method to get the appropriate Email provider based on environment configuration.
+    """
+    if os.environ.get("USE_MOCK_PROVIDERS") == "true":
+        return MockEmailProvider(provider_name="mock_email_gateway")
+    return MailgunEmailProvider(
+        api_key=os.environ.get("MAILGUN_API_KEY", "mock-key"),
+        domain=os.environ.get("MAILGUN_DOMAIN", "mock-domain.com"),
+        from_email=os.environ.get("MAILGUN_FROM_EMAIL", "no-reply@mock-domain.com"),
+        base_url=os.environ.get("MAILGUN_BASE_URL", "https://api.mailgun.net/v3")
+    )
 
 
 def run_email_worker():
@@ -34,14 +49,7 @@ def run_email_worker():
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     dlq_broker = KafkaMessageBroker(bootstrap_servers=kafka_url)
-    
-    email_provider = MailgunEmailProvider(
-        api_key=os.environ.get("MAILGUN_API_KEY", "mock-key"),
-        domain=os.environ.get("MAILGUN_DOMAIN", "mock-domain.com"),
-        from_email=os.environ.get("MAILGUN_FROM_EMAIL", "no-reply@mock-domain.com"),
-        base_url=os.environ.get("MAILGUN_BASE_URL", "https://api.mailgun.net/v3")
-    )
-
+    email_provider = get_email_provider()
     metrics_service = PrometheusMetricsService()
     
     def handle_message(payload: Dict[str, Any]) -> None:
