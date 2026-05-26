@@ -72,8 +72,8 @@ A production-grade, highly resilient notification ingestion and delivery engine 
 ### Run Locally
 
 ```bash
-git clone https://github.com/your-username/enterprise-notification-gateway.git
-cd enterprise-notification-gateway
+git clone https://github.com/Dosu333/notification_service.git
+cd notification_service
 
 # Copy environment variables
 cp .env.example .env
