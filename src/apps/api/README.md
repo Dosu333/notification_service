@@ -96,3 +96,25 @@ Here is the translation matrix frontend clients and API gateways should expect:
 `IdempotencyConflictException` results in a `200 OK`
 
 This is an intentional design choice. If a client is retrying a request because it dropped the original response packet, telling the client "Error: You already did this" forces the client to write complex error-handling logic. By returning a `200 OK (ALREADY_PROCESSED)`, the client seamlessly assumes its retry succeeded and clears its local queue.
+
+## ⚙️ 4. Preference Management Contracts
+The API provides endpoints to manage user consent, routing, and Do-Not-Disturb (DND) windows.
+
+### Update Preferences (`PUT /api/v1/users/{user_id}/preferences`)
+Updates the database and instantly triggers a Redis Cache Invalidation (`redis.delete()`) to prevent stale reads.
+
+**Request Body:**
+```json
+{
+  "dnd": false,
+  "channels": {
+    "SMS": false,
+    "EMAIL": true,
+    "PUSH": true
+  },
+  "templates": {
+    "marketing_promo": false,
+    "security_alert": true
+  }
+}
+

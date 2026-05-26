@@ -140,6 +140,11 @@ sequenceDiagram
 * **Alternative:** Hardcoding `psycopg2` and `boto3` queries directly into the API routes.
 * **Decision:** By using Repository and Provider interfaces, we isolate side effects. **Trade-off:** Introduces boilerplate (Interfaces, DTOs, Use Cases). However, it allows us to run isolated unit tests using Mock Repositories without spinning up Docker containers.
 
+### Late-Bound Check (Time-Travel Protection)
+
+* **Problem:** Scheduled notifications represent a *future intent*. If an API checks user preferences at the time of ingestion (e.g., Monday) for a message scheduled for Friday, the system risks violating user consent if the user opts out on Wednesday.
+* **Decision:** The Scheduler Worker performs a "Late-Bound Check". Right before the worker moves a message from the Redis delayed queue into the Postgres Outbox for delivery, it queries the Preference Provider again. If the user opted out in the interim, the worker drops the payload and marks the database record as `SUPPRESSED`. **Trade-off:** Adds a microsecond read operation to the worker loop, but mathematically guarantees compliance with user consent.
+
 ---
 
 ## 🏗️ 4. Future Architecture Improvements

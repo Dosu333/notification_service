@@ -86,6 +86,8 @@ Run the interactive Chaos CLI from the root directory:
 
 * **Validation:** Look at the `scheduler_worker` logs. Within 5 seconds, the `_ensure_connected()` lazy-initialization loop must automatically resolve the new Redis IP and log `"Successfully connected to Redis"` without the Python process ever exiting.
 
+* **Preference Layer:** The UserPreferenceProvider catches the connection drop and safely falls back to querying PostgreSQL directly. Overall API ingestion latency will increase slightly (from ~10ms to ~25ms) due to the database hit, but zero requests will fail.
+
 ### Test C: Upstream Provider 503 (Third-Party Outage)
 
 **Objective:** Prove the worker circuit breaker isolates failing external APIs (e.g., Twilio, SendGrid) to prevent queue blockage.

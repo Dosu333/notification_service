@@ -19,7 +19,7 @@ The worker architecture is deeply segmented. It does not use monolithic workers 
 | **SMS Workers** | `sms-workers` | `sms.queue` | Consumes SMS payloads, interacts with the Twilio/Mock adapter, and handles carrier rate limits. |
 | **Email Workers** | `email-workers` | `email.queue` | Consumes Email payloads, renders HTML templates, and interacts with SendGrid/Mock. |
 | **Push Workers** | `push-workers` | `push.queue` | Consumes Push payloads, manages device token validation, and interacts with APNs/FCM. |
-| **Scheduler Worker** | *(Redis ZSET Poller)* | Redis `delayed_notifications` | Wakes up every 0.5s, checks Redis for timestamps that are `<= current_time`, and routes due messages to the Outbox. |
+| **Scheduler Worker** | *(Redis ZSET Poller)* | Redis `delayed_notifications` | Polls ZSET for due timestamps. Executes Late-Bound Preference Checks. Routes allowed messages to the Outbox, and permanently drops `SUPPRESSED` messages. |
 
 ---
 

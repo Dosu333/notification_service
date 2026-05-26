@@ -60,3 +60,14 @@ MIGRATION_DATABASE_URL=postgresql://user:password@localhost:5432/notifdb
 docker-compose run --rm -e DATABASE_URL=$MIGRATION_DATABASE_URL api alembic upgrade head
 
 ```
+
+## 🧠 3. Redis Cache-Aside & Invalidation
+User preferences are read on every API notification request and every Scheduler dispatch. To protect PostgreSQL from being crushed under 2,000+ reads per second, Redis Cache-Aside pattern is used.
+
+### The Read Path (Fail-Safe)
+1. The `RedisUserPreferenceProvider` attempts to read `prefs:{user_id}` from RAM.
+2. On a cache miss, it queries PostgreSQL, then writes the result to Redis with a **300-second (5-minute) TTL**.
+3. **Resiliency:** If Redis is offline, the provider catches the `ConnectionError`, logs a warning, and routes all traffic directly to PostgreSQL, allowing the system to degrade gracefully.
+
+### The Write Path (Invalidation)
+Any update to the PostgreSQL preference table is immediately followed by `redis.delete(f"prefs:{user_id}")`. Failing to invalidate the cache will result in the system dispatching unwanted messages to users for up to 5 minutes based on stale RAM data.
