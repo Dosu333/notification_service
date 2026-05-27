@@ -139,7 +139,7 @@ This approach accepts the flaws of Dual Write but mitigates them by running a ni
 * **Why it was not used:** It is much simpler to build, but it violates real-time SLAs. If Kafka blips, a user might not get their Password Reset SMS until the reconciliation job runs 10 minutes (or hours) later.
 
 
-## 🧠 3. Design Patterns Justifications
+## 🧠 4. Design Patterns Justifications
 
 ### Transactional Outbox Pattern vs. Synchronous APIs
 
