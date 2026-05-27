@@ -8,6 +8,10 @@ The API acts as an **Ingestion Engine**. It is completely stateless and performs
 
 ---
 
+![Notification Flow](../../../docs/notification_flow.svg)
+
+---
+
 ## 📝 1. API Contracts
 
 All client integrations must conform to these payload structures. The core ingestion endpoint is `POST /api/v1/notifications/`.
