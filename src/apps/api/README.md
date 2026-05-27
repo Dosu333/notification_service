@@ -7,6 +7,7 @@ This directory contains the Presentation Layer of the system—the FastAPI web s
 The API acts as an **Ingestion Engine**. It is completely stateless and performs zero synchronous network I/O to third-party providers. Its sole responsibility is to validate incoming HTTP requests, enforce idempotency, safely persist the intent to Postgres (or Redis for scheduled tasks), and return a `200 OK` as fast as physically possible (target: < 15ms).
 
 ---
+## Ingestion Flow
 
 ![Notification Flow](../../../docs/notification_flow.svg)
 
