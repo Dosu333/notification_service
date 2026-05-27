@@ -124,7 +124,7 @@ If this system were to pivot its core requirements, there are three primary alte
 
 Instead of a Python dispatcher polling an Outbox table, CDC tools like Debezium attach directly to PostgreSQL's Write-Ahead Log (WAL) and stream row-level changes directly into Kafka.
 
-* **Why it was not used:** CDC is the "Enterprise Gold Standard" (used by Uber and LinkedIn), but it is operationally heavy. It requires running and maintaining Kafka Connect clusters and managing database replication slots. For this iteration, the logical Outbox pattern provided the same transactional guarantees without the infrastructure overhead of a CDC cluster.
+* **Why it was not used:** CDC is the gold standard, but it is operationally heavy. It requires running and maintaining Kafka Connect clusters and managing database replication slots. For this iteration, the logical Outbox pattern provided the same transactional guarantees without the infrastructure overhead of a CDC cluster.
 
 #### 2. Kafka Transactions
 
