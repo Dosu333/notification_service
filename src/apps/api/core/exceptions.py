@@ -2,12 +2,27 @@ import logging
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from src.use_cases.create_notification import IdempotencyConflictException
 
 
 logger = logging.getLogger(__name__)
 
 
 def setup_exception_handlers(app: FastAPI):
+    
+    @app.exception_handler(IdempotencyConflictException)
+    async def idempotency_conflict_exception_handler(request: Request, exc: IdempotencyConflictException):
+        """Catches Redis/DB idempotency locks and gracefully acknowledges them to the client."""
+        logger.info(f"Idempotency lock triggered: {exc}")
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "success": True,
+                "status": "ALREADY_PROCESSED",
+                "message": str(exc),
+                "notification_id": None
+            }
+        )
     
     @app.exception_handler(IntegrityError)
     async def integrity_exception_handler(request: Request, exc: IntegrityError):

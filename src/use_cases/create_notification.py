@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 from src.domain.entities import Notification, OutboxEvent
 from src.interfaces.repositories import NotificationRepository, UnitOfWork
 from src.interfaces.scheduling import NotificationScheduler
-from src.interfaces.providers import IdempotencyProvider, UserPreferenceProvider
+from src.interfaces.providers import IdempotencyProvider, UserPreferenceProvider, UserQuotaProvider
 from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
 
 
@@ -49,7 +49,8 @@ class CreateNotificationUseCase:
         scheduler: NotificationScheduler,
         metrics: PrometheusMetricsService,
         idempotency_provider: IdempotencyProvider ,
-        preference_provider: UserPreferenceProvider
+        preference_provider: UserPreferenceProvider,
+        quota_provider: UserQuotaProvider
     ):
         self.notification_repo = notification_repo
         self.unit_of_work = unit_of_work
@@ -57,6 +58,7 @@ class CreateNotificationUseCase:
         self.metrics = metrics
         self.idempotency_provider = idempotency_provider
         self.preference_provider = preference_provider
+        self.quota_provider = quota_provider
 
     def execute(self, request: CreateNotificationRequest) -> CreateNotificationResponse:
         
@@ -77,6 +79,7 @@ class CreateNotificationUseCase:
             return CreateNotificationResponse(
                 success=True,
                 message="Notification already processed.",
+                status=NotificationStatus.ALREADY_PROCESSED,
                 notification_id=existing_notification.id
             )
             
@@ -93,6 +96,17 @@ class CreateNotificationUseCase:
                 status=NotificationStatus.SUPPRESSED,
                 notification_id=None
             )
+        
+        if request.template == "marketing_promo":
+            quota_remaining = self.quota_provider.decrement(request.user_id, daily_limit=3)
+            
+            if quota_remaining < 0:
+                return CreateNotificationResponse(
+                    success=True,
+                    message=f"User daily promotional quota exceeded. ({abs(quota_remaining)} attempts blocked).",
+                    status=NotificationStatus.SUPPRESSED,
+                    notification_id=None
+                )
     
         notification = Notification(
             user_id=request.user_id,
@@ -119,6 +133,7 @@ class CreateNotificationUseCase:
             return CreateNotificationResponse(
                 success=True,
                 message="Notification successfully scheduled.",
+                status=NotificationStatus.SCHEDULED,
                 notification_id=notification.id
             )
 
@@ -146,5 +161,6 @@ class CreateNotificationUseCase:
             return CreateNotificationResponse(
                 success=True,
                 message="Notification successfully queued.",
-                notification_id=notification.id
+                notification_id=notification.id,
+                status=NotificationStatus.QUEUED
             )

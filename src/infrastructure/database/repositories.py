@@ -14,13 +14,17 @@ class SqlAlchemyUserPreferenceRepository(UserPreferenceRepository):
     def _to_entity(self, model: UserPreferenceModel) -> UserPreference:
         return UserPreference(
             user_id=model.user_id,
-            unsubscribed_channels=model.unsubscribed_channels
+            dnd=model.dnd,
+            channels=model.channels or {},
+            templates=model.templates or {}
         )
 
     def _to_model(self, entity: UserPreference) -> UserPreferenceModel:
         return UserPreferenceModel(
             user_id=entity.user_id,
-            unsubscribed_channels=entity.unsubscribed_channels
+            dnd=entity.dnd,
+            channels=entity.channels,
+            templates=entity.templates
         )
 
     def get_by_user_id(self, user_id: str) -> UserPreference:
@@ -28,13 +32,17 @@ class SqlAlchemyUserPreferenceRepository(UserPreferenceRepository):
         
         if model:
             return self._to_entity(model)
-        return UserPreference(user_id=user_id, unsubscribed_channels=[])
+            
+        # Return a permissive default if no record exists yet
+        return UserPreference(user_id=user_id)
 
     def save(self, preference: UserPreference) -> None:
         model = self.session.query(UserPreferenceModel).filter_by(user_id=preference.user_id).first()
         
         if model:
-            model.unsubscribed_channels = preference.unsubscribed_channels
+            model.dnd = preference.dnd
+            model.channels = preference.channels
+            model.templates = preference.templates
         else:
             new_model = self._to_model(preference)
             self.session.add(new_model)
@@ -91,7 +99,7 @@ class SqlAlchemyNotificationRepository(NotificationRepository):
     def save(self, notification: Notification) -> None:
         """Translates entity to model and adds it to session."""
         model = self._to_model(notification)
-        self.session.add(model)
+        self.session.merge(model)
 
     def get_by_provider_message_id(self, provider_message_id: str) -> Optional[Notification]:
         model = self.session.query(NotificationModel).filter_by(
@@ -182,3 +190,27 @@ class SqlAlchemyUnitOfWork(UnitOfWork):
         except SQLAlchemyError as e:
             self.session.rollback()
             raise e
+
+    def commit_recurring_dispatch(
+        self,
+        current_notification: Notification,
+        outbox_event: OutboxEvent,
+        next_notification: Notification = None
+    ) -> None:
+        try:
+            current_model = self.notifications._to_model(current_notification)
+            self.session.merge(current_model)
+            
+            outbox_model = self.outbox_repo._to_model(outbox_event)
+            self.session.add(outbox_model)
+            
+            if next_notification:
+                next_model = self.notifications._to_model(next_notification)
+                self.session.add(next_model)
+
+            self.session.commit()
+            
+        except Exception as e:
+            self.session.rollback()
+            raise e
+

@@ -12,8 +12,11 @@ from src.infrastructure.database.repositories import SqlAlchemyUserPreferenceRep
 from src.use_cases.cancel_notification import CancelNotificationUseCase
 from src.infrastructure.redis.queue import RedisSchedulerQueue
 from src.infrastructure.redis.preference_provider import RedisUserPreferenceProvider
-from src.interfaces.providers import UserPreferenceProvider
+from src.interfaces.providers import UserPreferenceProvider, UserQuotaProvider, IdempotencyProvider
 from src.infrastructure.observability.prometheus_metrics import PrometheusMetricsService
+from src.infrastructure.redis.rate_limiter import RedisRateLimiter
+from src.infrastructure.redis.quota_provider import RedisUserQuotaProvider
+from src.infrastructure.redis.idempotency_provider import RedisIdempotencyProvider
 
 
 load_dotenv()
@@ -43,19 +46,10 @@ def get_db():
         db.close()
 
 
-def get_create_notification_use_case(
-    db = Depends(get_db),
-    scheduler = Depends(get_scheduler)
-) -> CreateNotificationUseCase:
-    """Assembles the Use Case with its infrastructure dependencies."""
-    repo = SqlAlchemyNotificationRepository(db)
-    uow = SqlAlchemyUnitOfWork(db)
-    return CreateNotificationUseCase(
-        notification_repo=repo,
-        unit_of_work=uow,
-        scheduler=scheduler,
-        metrics=metrics_service
-    )
+def get_rate_limiter() -> RedisRateLimiter:
+    """Provides a singleton-like connection to the Redis Rate Limiter."""
+    redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
+    return RedisRateLimiter(redis_url=redis_url)
 
 
 def get_webhook_use_case(db = Depends(get_db)) -> HandleDeliveryReceiptUseCase:
@@ -69,6 +63,37 @@ def get_preference_provider(db = Depends(get_db)) -> UserPreferenceProvider:
     redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
     db_repo = SqlAlchemyUserPreferenceRepository(db)
     return RedisUserPreferenceProvider(redis_url=redis_url, db_repo=db_repo)
+
+
+def get_quota_provider() -> UserQuotaProvider:
+    redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
+    return RedisUserQuotaProvider(redis_url=redis_url)
+
+
+def get_idempotency_provider() -> IdempotencyProvider:
+    redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
+    return RedisIdempotencyProvider(redis_url=redis_url)
+
+
+def get_create_notification_use_case(
+    db = Depends(get_db),
+    scheduler = Depends(get_scheduler),
+    pref_provider: UserPreferenceProvider = Depends(get_preference_provider),
+    quota_provider: UserQuotaProvider = Depends(get_quota_provider),
+    idempotency_provider: IdempotencyProvider = Depends(get_idempotency_provider)
+) -> CreateNotificationUseCase:
+    repo = SqlAlchemyNotificationRepository(db)
+    uow = SqlAlchemyUnitOfWork(db)
+    
+    return CreateNotificationUseCase(
+        notification_repo=repo,
+        unit_of_work=uow,
+        scheduler=scheduler,
+        metrics=metrics_service,
+        idempotency_provider=idempotency_provider,
+        preference_provider=pref_provider,
+        quota_provider=quota_provider
+    )
 
 
 def get_update_preferences_use_case(
@@ -86,5 +111,5 @@ def get_update_preferences_use_case(
 def get_cancel_notification_use_case(db = Depends(get_db)) -> CancelNotificationUseCase:
     """Assembles the CancelNotificationUseCase with its concrete repository."""
     repo = SqlAlchemyNotificationRepository(db)
-    uow = SqlAlchemyUnitOfWork(db, repo)
+    uow = SqlAlchemyUnitOfWork(db)
     return CancelNotificationUseCase(notification_repo=repo, unit_of_work=uow)

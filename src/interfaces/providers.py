@@ -39,6 +39,16 @@ class UserPreferenceProvider(ABC):
         pass
 
 
+class UserQuotaProvider(ABC):
+    @abstractmethod
+    def decrement(self, user_id: str, daily_limit: int) -> int:
+        """
+        Records a promotional message send and returns the remaining quota.
+        If the return value is < 0, the user's quota has been exceeded.
+        """
+        pass
+
+
 class EmailProvider(ABC):
     """Contract for sending Email notifications."""
     

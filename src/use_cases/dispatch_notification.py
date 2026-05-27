@@ -24,6 +24,7 @@ class DispatchNotificationUseCase:
             notification_id = event_payload.get("notification_id")
             user_id = event_payload.get("user_id")
             requested_channel = event_payload.get("channel")
+            template = event_payload.get("template")
             
             if not all([notification_id, user_id, requested_channel]):
                 raise ValueError("Malformed event payload missing critical fields.")
@@ -38,10 +39,10 @@ class DispatchNotificationUseCase:
 
             user_prefs = self.user_preference_repo.get_by_user_id(user_id)
             
-            if user_prefs.is_unsubscribed(requested_channel):
+            if not user_prefs.can_receive(channel=requested_channel, template=template):
                 logger.info(
-                    f"User {user_id} is unsubscribed from {requested_channel}. "
-                    f"Silently dropping notification {notification_id}."
+                    f"Notification {notification_id} suppressed by Dispatcher. "
+                    f"User {user_id} opted out of {requested_channel} or template '{template}'."
                 )
                 return
 

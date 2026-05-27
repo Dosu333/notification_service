@@ -44,11 +44,9 @@ class RedisUserPreferenceProvider(UserPreferenceProvider):
 
         # If cache miss or Redis down, read from DB and update cache (Long-Term Protection)
         if prefs_dict is None:
-            prefs_dict = self.db_repo.get_by_user_id(user_id)
+            user_pref_entity = self.db_repo.get_by_user_id(user_id)
             
-            # If user has no record in DB, assume default permissive settings
-            if not prefs_dict:
-                prefs_dict = {"dnd": False, "channels": {}, "templates": {}}
+            prefs_dict = user_pref_entity.to_dict()
             
             # Update Redis cache 
             if self.client:

@@ -16,6 +16,7 @@ A production-grade, highly resilient notification ingestion and delivery engine 
 * **User Preference & Routing Engine** — millisecond-fast preference filtering (Do-Not-Disturb, channel/template opt-outs) protected by a Redis Cache-Aside pattern with strict write-through invalidation.
 * **Time-Travel Protection (Late-Bound Checks)** — prevents state drift for scheduled notifications by re-evaluating user consent at the exact moment of background dispatch, safely suppressing revoked intents.
 * **Two-Tier Idempotency Shield** — protects against "thundering herd" duplicate requests using a Redis `SETNX` distributed lock (Tier 1) and PostgreSQL historical unique constraints (Tier 2).
+* **API Rate Limiting & Quotas** — protects the system from volumetric DDoS attacks and enforces daily promotional limits using atomic Redis Lua scripts (Sliding Window algorithm).
 * **PgBouncer Multiplexing** — safely funnels up to 5,000 concurrent API connections through just 80 physical database connections using `poolclass=NullPool`.
 * **Linear Horizontal Scaling** — Redpanda (Kafka) partition mapping allows dynamic scaling of isolated channel workers (`sms`, `email`, `push`) without idle starvation.
 * **Chaos-Tested Resiliency** — lazy-initialization and client-side reconnection protocols ensure workers survive Redis OOM crashes and IP re-resolutions mid-flight.

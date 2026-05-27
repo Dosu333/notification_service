@@ -63,7 +63,7 @@ def run_scheduler():
             
             with SessionLocal() as session:
                 repo = SqlAlchemyNotificationRepository(session)
-                uow = SqlAlchemyUnitOfWork(session, repo)
+                uow = SqlAlchemyUnitOfWork(session)
                 pref_repo = SqlAlchemyUserPreferenceRepository(session)
                 
                 pref_provider = RedisUserPreferenceProvider(
@@ -72,10 +72,11 @@ def run_scheduler():
                 )
                 
                 use_case = ProcessScheduledNotificationUseCase(
-                    notification_repo=repo, 
+                    repo=repo, 
                     unit_of_work=uow, 
                     scheduler=queue,
-                    preference_provider=pref_provider
+                    preference_provider=pref_provider,
+                    metrics=metrics
                 )
                 
                 success = use_case.execute(notification_id_str, correlation_id)

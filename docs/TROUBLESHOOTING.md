@@ -149,3 +149,60 @@ Removed the trailing comma.
 
 **Lesson**
 Python's syntax allows implicit tuple creation simply by adding a comma. Always double-check trailing commas in class constructors and dependency injection chains.
+
+This is the perfect addition to your troubleshooting log because it highlights a very common architectural friction point: **Data Transfer Object (DTO) vs. Domain Entity leakage**.
+
+Here is the exact formatted block. Just append this to the very bottom of your `docs/TROUBLESHOOTING.md` file.
+
+```markdown
+---
+
+## 6. Redis Serialization Crash — Domain Entity Leakage
+
+**Error**
+```text
+File "/usr/local/lib/python3.11/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} is not JSON serializable')
+TypeError: Object of type UserPreference is not JSON serializable
+
+```
+
+**Root cause**
+After refactoring the User Preference module to adhere strictly to Clean Architecture, the `UserPreferenceRepository` was updated to return a strongly-typed Domain Entity (a Python `dataclass`) instead of a raw dictionary.
+
+However, the Redis Cache-Aside provider (`RedisUserPreferenceProvider`) attempted to push this object directly into Redis RAM using `json.dumps(prefs_dict)`. Because the standard Python JSON library does not know how to serialize custom domain objects, it threw a `TypeError`, causing the API endpoint to crash.
+
+**Fix**
+Added an explicit `.to_dict()` serialization method to the `UserPreference` domain entity to safely flatten the object into primitive Python types (booleans, strings, dicts). Updated the Redis provider to call this mapper before caching.
+
+```python
+# Before (Crash)
+user_pref_entity = self.db_repo.get_by_user_id(user_id)
+self.client.setex(name, time, value=json.dumps(user_pref_entity))
+
+# After (Fixed)
+user_pref_entity = self.db_repo.get_by_user_id(user_id)
+prefs_dict = user_pref_entity.to_dict() # Flatten to primitives
+self.client.setex(name, time, value=json.dumps(prefs_dict))
+
+```
+
+**Lesson**
+Never allow complex Domain Entities to leak directly into infrastructure serialization boundaries (like Redis, Kafka, or HTTP responses). Always explicitly map entities into primitive Data Transfer Objects (DTOs) or dictionaries before interacting with external stores.
+
+---
+
+## 6. Scheduler Crash — `UniqueViolation` on existing Primary Key
+
+**Error**
+```text
+psycopg2.errors.UniqueViolation: duplicate key value violates unique constraint "notifications_pkey"
+```
+
+**Root cause**
+The Scheduler worker crashed while attempting to update a delayed notification's status from `SCHEDULED` to `QUEUED`. Because the system strictly adheres to Clean Architecture, the Database Repository mapped the SQLAlchemy ORM model into a pure Python dataclass (Domain Entity) before handing it to the Use Case.
+
+When the Use Case handed the modified Domain Entity back to the `UnitOfWork` to save, the infrastructure layer mapped it back into a *new* SQLAlchemy ORM instance and called `session.add()`. SQLAlchemy lost the state tracking, assumed it was a brand-new row, and attempted an `INSERT` rather than an `UPDATE`.
+
+**Fix**
+Updated the `UnitOfWork` and Repository layers to use `session.merge(model)` instead of `session.add(model)`. `merge()` forces SQLAlchemy to inspect the Primary Key, match it against the database, and issue a safe `UPDATE` statement, bridging the gap between stateless Domain Entities and stateful ORM tracking.
