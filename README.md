@@ -156,3 +156,5 @@ PostgreSQL assigns one OS process per connection. 2,000 concurrent API users wou
 | **Data Boundaries Manual** | [`src/infrastructure/README.md`](./src/infrastructure/README.md) | PgBouncer multiplexing matrix, Cache Invalidation protocols, and connection invariants. |
 | **Chaos & Resiliency Runbook** | [`tools/chaos/README.md`](./tools/chaos/README.md) | Locust load testing targets and Fault Injection (SIGKILL) execution guide. |
 | **Troubleshooting & Incident Log** | [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) | Architectural race conditions, Chaos testing casualties, and root-cause analyses. |
+| **Test Payload** | [`docs/TEST_PAYLOAD.md`](./docs/TEST_PAYLOAD.md) | Copy-paste curl examples |
+| **Use Cases** | [`docs/USE_CASE.md`](./docs/USE_CASE.md) | Real-world scenerios where this gateway can be used |

@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 320" width="1060" height="320" font-family="ui-monospace, Menlo, monospace">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .node  { fill:#1e293b; }
+      .lbl   { text-anchor:middle; dominant-baseline:central; }
+    </style>
+  </defs>
+
+  <rect width="1060" height="320" rx="14" fill="#0f172a"/>
+
+  <text x="530" y="24" class="lbl" fill="#475569" font-size="11" letter-spacing="2" font-weight="bold">TRANSACTIONAL OUTBOX DISPATCH FLOW</text>
+
+  <path id="c2a" d="M122,162 H158" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+
+  <path id="a2db" d="M262,162 H308" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+
+  <path id="db2dp" d="M432,162 H478" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+
+  <path id="dp2rp" d="M592,162 H638" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+
+  <path id="rp2w" d="M752,162 H798" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+
+  <path id="w2pv" d="M902,162 H938" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+
+  <path id="a2rd_up" d="M195,140 V96" stroke="#ef4444" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+  <path id="rd2a_dn" d="M225,96 V140" stroke="#ef4444" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ah)"/>
+
+  <path id="w2dlq" d="M850,184 V226" stroke="#f43f5e" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ah)"/>
+
+  <rect x="22" y="140" width="100" height="44" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+  <text x="72" y="158" class="lbl" fill="#cbd5e1" font-size="12" font-weight="600">Upstream</text>
+  <text x="72" y="173" class="lbl" fill="#475569" font-size="9">microservice</text>
+
+  <rect x="160" y="140" width="100" height="44" rx="8" fill="#172040" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="210" y="158" class="lbl" fill="#93c5fd" font-size="12" font-weight="600">FastAPI</text>
+  <text x="210" y="173" class="lbl" fill="#475569" font-size="9">ingestion edge</text>
+
+  <rect x="160" y="50" width="100" height="44" rx="8" fill="#2a1010" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="210" y="68" class="lbl" fill="#fca5a5" font-size="11" font-weight="600">Redis</text>
+  <text x="210" y="83" class="lbl" fill="#475569" font-size="9">SETNX locks</text>
+
+  <rect x="310" y="140" width="122" height="44" rx="8" fill="#1a1535" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="371" y="158" class="lbl" fill="#c4b5fd" font-size="12" font-weight="600">PostgreSQL</text>
+  <text x="371" y="173" class="lbl" fill="#475569" font-size="9">outbox events</text>
+
+  <rect x="480" y="140" width="112" height="44" rx="8" fill="#2d1b4e" stroke="#a855f7" stroke-width="1.5"/>
+  <text x="536" y="158" class="lbl" fill="#d8b4fe" font-size="12" font-weight="600">Dispatcher</text>
+  <text x="536" y="173" class="lbl" fill="#475569" font-size="9">SKIP LOCKED</text>
+
+  <rect x="640" y="140" width="112" height="44" rx="8" fill="#231a05" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="696" y="158" class="lbl" fill="#fcd34d" font-size="12" font-weight="600">Redpanda</text>
+  <text x="696" y="173" class="lbl" fill="#475569" font-size="9">event topic</text>
+
+  <rect x="800" y="140" width="102" height="44" rx="8" fill="#05201a" stroke="#10b981" stroke-width="1.5"/>
+  <text x="851" y="158" class="lbl" fill="#6ee7b7" font-size="12" font-weight="600">Worker</text>
+  <text x="851" y="173" class="lbl" fill="#475569" font-size="9">consumer</text>
+
+  <rect x="940" y="140" width="100" height="44" rx="8" fill="#051a25" stroke="#06b6d4" stroke-width="1.5"/>
+  <text x="990" y="158" class="lbl" fill="#67e8f9" font-size="11" font-weight="600">Provider</text>
+  <text x="990" y="173" class="lbl" fill="#475569" font-size="9">Twilio / Mock</text>
+
+  <rect x="800" y="228" width="102" height="44" rx="8" fill="#2a1014" stroke="#f43f5e" stroke-width="1.5"/>
+  <text x="851" y="246" class="lbl" fill="#fda4af" font-size="11" font-weight="600">DLQ</text>
+  <text x="851" y="261" class="lbl" fill="#475569" font-size="9">notification.dlq</text>
+
+  <text x="140" y="152" class="lbl" fill="#334155" font-size="9">HTTP</text>
+  <text x="285" y="152" class="lbl" fill="#334155" font-size="9">commit</text>
+  <text x="455" y="152" class="lbl" fill="#334155" font-size="9">poll</text>
+  <text x="615" y="152" class="lbl" fill="#334155" font-size="9">publish</text>
+  <text x="775" y="152" class="lbl" fill="#334155" font-size="9">consume</text>
+  <text x="920" y="152" class="lbl" fill="#334155" font-size="9">deliver</text>
+
+  <text x="175" y="118" class="lbl" fill="#ef4444" font-size="8">check</text>
+  <text x="825" y="206" class="lbl" fill="#f43f5e" font-size="8">on err</text>
+
+  <circle r="4" fill="#60a5fa" opacity="0.95">
+    <animateMotion dur="2.0s" repeatCount="indefinite" begin="0s">
+      <mpath href="#c2a"/>
+    </animateMotion>
+  </circle>
+
+  <circle r="4" fill="#a78bfa" opacity="0.95">
+    <animateMotion dur="2.0s" repeatCount="indefinite" begin="0.5s">
+      <mpath href="#a2db"/>
+    </animateMotion>
+  </circle>
+
+  <circle r="4" fill="#d8b4fe" opacity="0.95">
+    <animateMotion dur="2.0s" repeatCount="indefinite" begin="1.0s">
+      <mpath href="#db2dp"/>
+    </animateMotion>
+  </circle>
+
+  <circle r="4" fill="#fbbf24" opacity="0.95">
+    <animateMotion dur="2.0s" repeatCount="indefinite" begin="1.5s">
+      <mpath href="#dp2rp"/>
+    </animateMotion>
+  </circle>
+
+  <circle r="4" fill="#34d399" opacity="0.95">
+    <animateMotion dur="2.0s" repeatCount="indefinite" begin="2.0s">
+      <mpath href="#rp2w"/>
+    </animateMotion>
+  </circle>
+
+  <circle r="4" fill="#22d3ee" opacity="0.95">
+    <animateMotion dur="2.0s" repeatCount="indefinite" begin="2.5s">
+      <mpath href="#w2pv"/>
+    </animateMotion>
+  </circle>
+
+  <circle r="3.5" fill="#f87171" opacity="0.9">
+    <animateMotion dur="1.5s" repeatCount="indefinite" begin="0.2s">
+      <mpath href="#a2rd_up"/>
+    </animateMotion>
+  </circle>
+
+  <circle r="3.5" fill="#f87171" opacity="0.9">
+    <animateMotion dur="1.5s" repeatCount="indefinite" begin="0.9s">
+      <mpath href="#rd2a_dn"/>
+    </animateMotion>
+  </circle>
+
+  <circle r="3.5" fill="#f43f5e" opacity="0.9">
+    <animateMotion dur="3.0s" repeatCount="indefinite" begin="1.0s">
+      <mpath href="#w2dlq"/>
+    </animateMotion>
+  </circle>
+
+  <rect x="250" y="295" width="8" height="8" rx="2" fill="#60a5fa"/>
+  <text x="264" y="303" fill="#475569" font-size="9" text-anchor="start">HTTP intent</text>
+  
+  <rect x="340" y="295" width="8" height="8" rx="2" fill="#a78bfa"/>
+  <text x="354" y="303" fill="#475569" font-size="9" text-anchor="start">ACID transaction</text>
+  
+  <rect x="450" y="295" width="8" height="8" rx="2" fill="#fbbf24"/>
+  <text x="464" y="303" fill="#475569" font-size="9" text-anchor="start">Kafka pub/sub</text>
+
+  <rect x="550" y="295" width="8" height="8" rx="2" fill="#22d3ee"/>
+  <text x="564" y="303" fill="#475569" font-size="9" text-anchor="start">API delivery</text>
+
+  <rect x="640" y="295" width="8" height="8" rx="2" fill="#f87171"/>
+  <text x="654" y="303" fill="#475569" font-size="9" text-anchor="start">cache lookup</text>
+
+  <rect x="735" y="295" width="8" height="8" rx="2" fill="#f43f5e"/>
+  <text x="749" y="303" fill="#475569" font-size="9" text-anchor="start">DLQ routing</text>
+</svg>
