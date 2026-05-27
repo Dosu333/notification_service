@@ -121,10 +121,10 @@ docker-compose up -d --scale sms_worker=8 --scale email_worker=4
 Directly calling third-party APIs (Twilio) during an HTTP request ties the system's availability to the provider's availability. The Outbox pattern persists the intent atomically with the database, allowing the API to respond in <15ms while delivery happens asynchronously.
 
 **Why a Two-Tier Idempotency Shield?**
-Relying solely on DB `UNIQUE` constraints burns CPU during traffic spikes. We "Fail-Open" a Redis `SETNX` lock (Tier 1) to deflect exact-millisecond "double-clicks" in RAM, and fallback to PostgreSQL (Tier 2) to catch historical duplicate retries.
+Relying solely on DB `UNIQUE` constraints burns CPU during traffic spikes. "Fail-Open" a Redis `SETNX` lock (Tier 1) to deflect exact-millisecond "double-clicks" in RAM, and fallback to PostgreSQL (Tier 2) to catch historical duplicate retries.
 
 **Why Redis Cache-Aside for User Preferences?**
-Checking user consent on every request at 2,000 RPS would crush PostgreSQL. We cache preferences in Redis with a 5-minute TTL. Crucially, the `PUT /preferences` API performs a strict **cache invalidation** upon updating the database, guaranteeing data consistency without sacrificing read speed.
+Checking user consent on every request at 2,000 RPS would crush PostgreSQL. Cache preferences in Redis with a 5-minute TTL. Crucially, the `PUT /preferences` API performs a strict **cache invalidation** upon updating the database, guaranteeing data consistency without sacrificing read speed.
 
 **Why Late-Bound Checks for Scheduled Tasks?**
 If a user schedules a notification for Friday, but opts out on Wednesday, checking preferences only at the time of ingestion creates a "Time-Travel" state drift. The Scheduler worker performs a *Late-Bound Check* microseconds before dispatching to Kafka, ensuring absolute compliance with current user consent.

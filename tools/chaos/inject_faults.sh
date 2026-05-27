@@ -55,7 +55,7 @@ case "$1" in
 
   "test-c")
     echo -e "${YELLOW}Executing Test C: Upstream Provider 503 Outage${NC}"
-    echo "To simulate this without altering code, we dynamically inject a Chaos Environment Variable."
+    echo "To simulate this without altering code, dynamically inject a Chaos Environment Variable."
     
     echo -e "${RED}Injecting CHAOS_MODE=503 into sms_worker...${NC}"
     # Recreate container with bad environment variable

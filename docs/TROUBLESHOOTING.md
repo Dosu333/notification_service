@@ -14,7 +14,7 @@ Error in scheduler loop: Error -3 connecting to redis:6379. Temporary failure in
 ```
 
 **Root cause**
-During Chaos Test B, we sent a `SIGKILL` to the Redis container to simulate a crash. When Docker brought a new Redis container back up, it assigned it a new internal IP address. However, our `scheduler_worker` was using a persistent, long-lived `redis.Redis()` client instantiated at startup. The Python process held onto the stale DNS cache of the old IP address, causing an infinite crash loop even after Redis was fully online.
+During Chaos Test B, I sent a `SIGKILL` to the Redis container to simulate a crash. When Docker brought a new Redis container back up, it assigned it a new internal IP address. However, the `scheduler_worker` was using a persistent, long-lived `redis.Redis()` client instantiated at startup. The Python process held onto the stale DNS cache of the old IP address, causing an infinite crash loop even after Redis was fully online.
 
 **Fix**
 Moved away from static instantiation to a **Lazy-Initialization** pattern in `RedisSchedulerQueue` and all Redis Providers:

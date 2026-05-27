@@ -78,27 +78,91 @@ Here is the lifecycle of a notification:
 
 ---
 
+## 🏗️ 3. Architecture Decision: The Transactional Outbox Pattern
+
+In distributed systems, the most common architecture for event publishing is the **Dual Write**. In a dual write system, the application attempts to mutate two separate systems in a single flow:
+
+```python
+# The Dual Write Anti-Pattern
+db.save(notification)      # Action 1
+kafka.publish(event)       # Action 2
+
+```
+
+### Why I did not use the Dual Write
+
+While dual writes are common in many production systems due to their simplicity, they inherently lack atomicity.
+
+* **If Action 1 succeeds but Action 2 fails** (e.g., Kafka is down or network blips), the notification is recorded in the database but never sent to the user.
+* **If Action 2 succeeds but Action 1 fails** (e.g., DB transaction rolls back), the user receives a "phantom" notification that does not exist in historical records.
+
+To meet strict **Zero Data Loss** guarantee, I implemented the **Transactional Outbox Pattern**. By writing the notification payload and the dispatch event into the same PostgreSQL database within a single atomic transaction, it can guarantee that if the business intent is recorded, the message will *eventually* be delivered.
+
+### The Complexities of the Outbox Pattern
+
+Choosing the Outbox pattern is an architectural trade-off that introduces some complexities:
+
+1. **Polling Bottleneck:** It requires a separate background process (the Dispatcher Daemon) to continuously poll the database for new outbox events. If not designed carefully (e.g., using `SELECT ... FOR UPDATE SKIP LOCKED`), this polling becomes a massive bottleneck.
+2. **Eventual Consistency Latency:** It introduces micro-latency. Instead of publishing to Kafka in $<5$ms, the system must wait for the database commit, the polling cycle, and the subsequent Kafka publish.
+3. **Database Bloat:** The outbox table grows extremely fast. It requires an aggressive archiving or pruning strategy (like dropping partitioned tables) to prevent database degradation.
+4. **At-Least-Once Delivery:** Because the dispatcher might crash *after* publishing to Kafka but *before* deleting the outbox row, it will occasionally publish duplicates. This strictly mandates that downstream consumers are fully idempotent.
+
+### When to Use the Outbox Pattern
+
+The Outbox pattern is optimal when:
+
+* **Data Integrity > Latency:** Missing an event is unacceptable (e.g., billing alerts, security verifications).
+* **Broker Unpredictability:** You cannot guarantee your message broker (Kafka/RabbitMQ) will have the same high availability as your primary database.
+
+---
+
+### Alternatives Evaluated (And why they were not used)
+
+If this system were to pivot its core requirements, there are three primary alternatives to the Outbox pattern that were evaluated:
+
+#### 1. Change Data Capture (CDC / Debezium)
+
+Instead of a Python dispatcher polling an Outbox table, CDC tools like Debezium attach directly to PostgreSQL's Write-Ahead Log (WAL) and stream row-level changes directly into Kafka.
+
+* **Why it was not used:** CDC is the "Enterprise Gold Standard" (used by Uber and LinkedIn), but it is operationally heavy. It requires running and maintaining Kafka Connect clusters and managing database replication slots. For this iteration, the logical Outbox pattern provided the same transactional guarantees without the infrastructure overhead of a CDC cluster.
+
+#### 2. Kafka Transactions
+
+Kafka natively supports atomic producer transactions, allowing you to coordinate database writes and Kafka publishes natively.
+
+* **Why it was not used:** It tightly couples the application's core domain to Kafka-specific semantics. Clean Architecture dictates that Use Cases should not know they are talking to Kafka. The Outbox pattern keeps the application layer agnostic to the message broker.
+
+#### 3. Dual Write + Reconciliation (At-Least-Once)
+
+This approach accepts the flaws of Dual Write but mitigates them by running a nightly "Reconciliation Cron Job." The job scans the database for notifications that have been stuck in `PENDING` for too long and re-publishes them to Kafka.
+
+* **Why it was not used:** It is much simpler to build, but it violates real-time SLAs. If Kafka blips, a user might not get their Password Reset SMS until the reconciliation job runs 10 minutes (or hours) later.
+
+
 ## 🧠 3. Design Patterns Justifications
 
 ### Transactional Outbox Pattern vs. Synchronous APIs
 
-* **Alternative:** The API calls Twilio directly. If Twilio takes 3 seconds to respond, the API connection stays open for 3 seconds. At 500 RPS, we exhaust all server threads instantly, causing a complete system outage.
-* **Decision:** The Outbox Pattern decouples ingestion from delivery. The API writes to the database and hangs up. Redpanda buffers the delivery. If Twilio goes down, messages safely queue up in Kafka until the outage is resolved. **Trade-off:** We sacrifice immediate delivery confirmation to the client in exchange for API ingestion scalability.
+* **Alternative:** The API calls Twilio directly. If Twilio takes 3 seconds to respond, the API connection stays open for 3 seconds. At 500 RPS, all server threads will be exhausted instantly, causing a complete system outage.
+* **Decision:** The Outbox Pattern decouples ingestion from delivery. The API writes to the database and hangs up. Redpanda buffers the delivery. If Twilio goes down, messages safely queue up in Kafka until the outage is resolved.
+**Trade-off:** Sacrifice immediate delivery confirmation to the client in exchange for API ingestion scalability.
 
 ### Distributed Locks (Two-Tier Idempotency) vs. Database-Only Checks
 
 * **Alternative:** Relying purely on Postgres `UNIQUE` constraints for idempotency.
-* **Decision:** A Redis `SETNX` lock sits in front of the database. When mobile clients aggressively retry requests due to poor network conditions ("Thundering Herd"), Redis deflects the duplicate payloads in RAM. **Trade-off:** Requires maintaining a Redis cluster, but prevents heavy connection and CPU burn on the relational database during traffic spikes.
+* **Decision:** A Redis `SETNX` lock sits in front of the database. When mobile clients aggressively retry requests due to poor network conditions ("Thundering Herd"), Redis deflects the duplicate payloads in RAM.
+**Trade-off:** Requires maintaining a Redis cluster, but prevents heavy connection and CPU burn on the relational database during traffic spikes.
 
 ### Dependency Inversion
 
 * **Alternative:** Hardcoding `psycopg2` and `boto3` queries directly into the API routes.
-* **Decision:** By using Repository and Provider interfaces, we isolate side effects. **Trade-off:** Introduces boilerplate (Interfaces, DTOs, Use Cases). However, it allows us to run isolated unit tests using Mock Repositories without spinning up Docker containers.
+* **Decision:** By using Repository and Provider interfaces, side effects are isolated. * **Trade-off:** Introduces boilerplate (Interfaces, DTOs, Use Cases). However, it allows us to run isolated unit tests using Mock Repositories without spinning up Docker containers.
 
 ### Late-Bound Check (Time-Travel Protection)
 
 * **Problem:** Scheduled notifications represent a *future intent*. If an API checks user preferences at the time of ingestion (e.g., Monday) for a message scheduled for Friday, the system risks violating user consent if the user opts out on Wednesday.
-* **Decision:** The Scheduler Worker performs a "Late-Bound Check". Right before the worker moves a message from the Redis delayed queue into the Postgres Outbox for delivery, it queries the Preference Provider again. If the user opted out in the interim, the worker drops the payload and marks the database record as `SUPPRESSED`. **Trade-off:** Adds a microsecond read operation to the worker loop, but mathematically guarantees compliance with user consent.
+* **Decision:** The Scheduler Worker performs a "Late-Bound Check". Right before the worker moves a message from the Redis delayed queue into the Postgres Outbox for delivery, it queries the Preference Provider again. If the user opted out in the interim, the worker drops the payload and marks the database record as `SUPPRESSED`.
+* **Trade-off:** Adds a microsecond read operation to the worker loop, but mathematically guarantees compliance with user consent.
 
 ---
 
