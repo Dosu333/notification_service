@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 560" width="1140" height="560" font-family="Segoe UI, Arial, sans-serif">
+
+  <defs>
+    <marker id="arr-gray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#64748b"/>
+    </marker>
+    <marker id="arr-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#22c55e"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arr-orange" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#f97316"/>
+    </marker>
+    <marker id="arr-red" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#ef4444"/>
+    </marker>
+    <marker id="arr-purple" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#a855f7"/>
+    </marker>
+
+    <filter id="glow-green" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-blue" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-orange" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-red" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1140" height="560" fill="#0f172a" rx="14"/>
+
+  <text x="570" y="34" text-anchor="middle" fill="#f1f5f9" font-size="18" font-weight="bold">Scalable Notification Gateway — Transactional Outbox Architecture</text>
+
+  <rect x="20" y="160" width="120" height="46" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="80" y="180" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="bold">Billing Service</text>
+  <text x="80" y="195" text-anchor="middle" fill="#93c5fd" font-size="10">Invoice Alerts</text>
+
+  <rect x="20" y="240" width="120" height="46" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="80" y="260" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="bold">Marketing Service</text>
+  <text x="80" y="275" text-anchor="middle" fill="#93c5fd" font-size="10">Promotional Campaigns</text>
+
+  <line x1="140" y1="183" x2="195" y2="210" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arr-blue)" opacity="0.4"/>
+  <circle r="4" fill="#3b82f6" opacity="0.9">
+    <animateMotion dur="1.5s" repeatCount="indefinite" begin="0s"><mpath href="#path-src1"/></animateMotion>
+  </circle>
+  <path id="path-src1" d="M140,183 L195,210" fill="none"/>
+
+  <line x1="140" y1="263" x2="195" y2="236" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arr-blue)" opacity="0.4"/>
+  <circle r="4" fill="#3b82f6" opacity="0.9">
+    <animateMotion dur="1.5s" repeatCount="indefinite" begin="0.7s"><mpath href="#path-src2"/></animateMotion>
+  </circle>
+  <path id="path-src2" d="M140,263 L195,236" fill="none"/>
+
+  <rect x="200" y="80" width="160" height="70" rx="8" fill="#451a1a" stroke="#ef4444" stroke-width="1.5" filter="url(#glow-red)"/>
+  <text x="280" y="102" text-anchor="middle" fill="#fca5a5" font-size="11" font-weight="bold">Redis (Tier 1)</text>
+  <text x="280" y="118" text-anchor="middle" fill="#cbd5e1" font-size="9">SETNX Idempotency Locks</text>
+  <text x="280" y="132" text-anchor="middle" fill="#cbd5e1" font-size="9">Rate Limits &amp; Preference Cache</text>
+
+  <rect x="200" y="195" width="160" height="90" rx="8" fill="#14532d" stroke="#22c55e" stroke-width="1.5" filter="url(#glow-green)">
+    <animate attributeName="stroke-opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
+  </rect>
+  <text x="280" y="220" text-anchor="middle" fill="#86efac" font-size="12" font-weight="bold">FastAPI Ingestion Edge</text>
+  <text x="280" y="240" text-anchor="middle" fill="#64748b" font-size="10">Validate Schema</text>
+  <text x="280" y="255" text-anchor="middle" fill="#64748b" font-size="10">Check Domain Quotas</text>
+  <text x="280" y="270" text-anchor="middle" fill="#64748b" font-size="10">Execute Use Case</text>
+
+  <line x1="260" y1="195" x2="260" y2="155" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arr-red)" opacity="0.6"/>
+  <circle r="3" fill="#ef4444"><animateMotion dur="0.8s" repeatCount="indefinite" begin="0s"><mpath href="#path-api-redis-up"/></animateMotion></circle>
+  <path id="path-api-redis-up" d="M260,195 L260,155" fill="none"/>
+  
+  <line x1="300" y1="155" x2="300" y2="195" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arr-red)" opacity="0.6"/>
+  <circle r="3" fill="#ef4444"><animateMotion dur="0.8s" repeatCount="indefinite" begin="0.4s"><mpath href="#path-api-redis-down"/></animateMotion></circle>
+  <path id="path-api-redis-down" d="M300,155 L300,195" fill="none"/>
+
+  <rect x="420" y="195" width="160" height="90" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5" filter="url(#glow-blue)"/>
+  <text x="500" y="218" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="bold">PostgreSQL (Tier 2)</text>
+  <text x="500" y="235" text-anchor="middle" fill="#cbd5e1" font-size="10">Unique Constraints</text>
+  <rect x="430" y="245" width="140" height="25" rx="4" fill="#0f172a" stroke="#64748b" stroke-width="1"/>
+  <text x="500" y="261" text-anchor="middle" fill="#f1f5f9" font-size="10" font-weight="bold">Outbox Events Table</text>
+
+  <line x1="360" y1="240" x2="415" y2="240" stroke="#3b82f6" stroke-width="2" marker-end="url(#arr-blue)" opacity="0.8"/>
+  <circle r="4" fill="#3b82f6"><animateMotion dur="1s" repeatCount="indefinite" begin="0s"><mpath href="#path-api-db"/></animateMotion></circle>
+  <path id="path-api-db" d="M360,240 L415,240" fill="none"/>
+  <text x="388" y="232" text-anchor="middle" fill="#3b82f6" font-size="9" font-weight="bold">Commit</text>
+
+  <rect x="420" y="340" width="160" height="60" rx="8" fill="#3b1a4a" stroke="#a855f7" stroke-width="1.5"/>
+  <text x="500" y="364" text-anchor="middle" fill="#d8b4fe" font-size="11" font-weight="bold">Dispatcher Daemon</text>
+  <text x="500" y="380" text-anchor="middle" fill="#cbd5e1" font-size="9">SELECT ... SKIP LOCKED</text>
+
+  <line x1="500" y1="285" x2="500" y2="335" stroke="#a855f7" stroke-width="1.5" marker-end="url(#arr-purple)" opacity="0.6" stroke-dasharray="4,2"/>
+  <circle r="3.5" fill="#a855f7"><animateMotion dur="1.2s" repeatCount="indefinite" begin="0.2s"><mpath href="#path-db-disp"/></animateMotion></circle>
+  <path id="path-db-disp" d="M500,285 L500,335" fill="none"/>
+  <text x="525" y="315" text-anchor="middle" fill="#a855f7" font-size="9">Poll Outbox</text>
+
+  <rect x="640" y="160" width="140" height="240" rx="8" fill="#451a03" stroke="#f97316" stroke-width="1.5" filter="url(#glow-orange)"/>
+  <text x="710" y="185" text-anchor="middle" fill="#fdba74" font-size="12" font-weight="bold">Redpanda (Kafka)</text>
+  
+  <rect x="655" y="200" width="110" height="25" rx="4" fill="#f97316" opacity="0.2"/>
+  <text x="710" y="216" text-anchor="middle" fill="#fcd34d" font-size="10">topic: sms.queue</text>
+
+  <rect x="655" y="240" width="110" height="25" rx="4" fill="#f97316" opacity="0.2"/>
+  <text x="710" y="256" text-anchor="middle" fill="#fcd34d" font-size="10">topic: email.queue</text>
+
+  <rect x="655" y="320" width="110" height="25" rx="4" fill="#ef4444" opacity="0.2"/>
+  <text x="710" y="336" text-anchor="middle" fill="#fca5a5" font-size="10">notification.dlq</text>
+
+  <rect x="655" y="360" width="110" height="25" rx="4" fill="#f97316" opacity="0.2"/>
+  <text x="710" y="376" text-anchor="middle" fill="#fcd34d" font-size="10">topic: events (stream)</text>
+
+  <line x1="580" y1="370" x2="635" y2="370" stroke="#f97316" stroke-width="2" marker-end="url(#arr-orange)" opacity="0.8"/>
+  <circle r="4" fill="#f97316"><animateMotion dur="1s" repeatCount="indefinite" begin="0.5s"><mpath href="#path-disp-kafka"/></animateMotion></circle>
+  <path id="path-disp-kafka" d="M580,370 L635,370" fill="none"/>
+
+  <rect x="840" y="185" width="140" height="55" rx="8" fill="#1c1917" stroke="#f97316" stroke-width="1.5"/>
+  <text x="910" y="209" text-anchor="middle" fill="#fdba74" font-size="11" font-weight="bold">SMS Worker</text>
+  <text x="910" y="226" text-anchor="middle" fill="#64748b" font-size="9">Twilio HTTP Provider</text>
+
+  <rect x="840" y="255" width="140" height="55" rx="8" fill="#1c1917" stroke="#f97316" stroke-width="1.5"/>
+  <text x="910" y="279" text-anchor="middle" fill="#fdba74" font-size="11" font-weight="bold">Email Worker</text>
+  <text x="910" y="296" text-anchor="middle" fill="#64748b" font-size="9">SendGrid HTTP Provider</text>
+
+  <rect x="420" y="60" width="160" height="55" rx="8" fill="#1e1a3a" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="500" y="84" text-anchor="middle" fill="#c4b5fd" font-size="11" font-weight="bold">Scheduler Daemon</text>
+  <text x="500" y="101" text-anchor="middle" fill="#64748b" font-size="9">ZSET Poll → Spawn-on-Fire</text>
+
+  <line x1="780" y1="212" x2="835" y2="212" stroke="#f97316" stroke-width="1.5" marker-end="url(#arr-orange)" opacity="0.6"/>
+  <circle r="3.5" fill="#f97316"><animateMotion dur="1s" repeatCount="indefinite" begin="0.3s"><mpath href="#path-kafka-sms"/></animateMotion></circle>
+  <path id="path-kafka-sms" d="M780,212 L835,212" fill="none"/>
+
+  <line x1="780" y1="262" x2="835" y2="282" stroke="#f97316" stroke-width="1.5" marker-end="url(#arr-orange)" opacity="0.6"/>
+  <circle r="3.5" fill="#f97316"><animateMotion dur="1.2s" repeatCount="indefinite" begin="0.6s"><mpath href="#path-kafka-email"/></animateMotion></circle>
+  <path id="path-kafka-email" d="M780,262 L835,282" fill="none"/>
+
+  <path d="M 910 240 Q 910 332 785 332" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arr-red)" opacity="0.7"/>
+  <circle r="3" fill="#ef4444"><animateMotion dur="2s" repeatCount="indefinite" begin="1s"><mpath href="#path-worker-dlq"/></animateMotion></circle>
+  <path id="path-worker-dlq" d="M 910 240 Q 910 332 785 332" fill="none"/>
+  <text x="830" y="325" fill="#ef4444" font-size="9">On Exception</text>
+
+  <line x1="500" y1="115" x2="500" y2="190" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arr-purple)" opacity="0.6" stroke-dasharray="3,3"/>
+  <circle r="3" fill="#8b5cf6"><animateMotion dur="1.5s" repeatCount="indefinite" begin="0s"><mpath href="#path-sched-db"/></animateMotion></circle>
+  <path id="path-sched-db" d="M500,115 L500,190" fill="none"/>
+
+  <circle cx="1060" cy="212" r="22" fill="#0f2744" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="1060" y="207" text-anchor="middle" fill="#93c5fd" font-size="18">📱</text>
+  <text x="1060" y="225" text-anchor="middle" fill="#64748b" font-size="9">Mobile</text>
+
+  <circle cx="1060" cy="282" r="22" fill="#0f2744" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="1060" y="277" text-anchor="middle" fill="#93c5fd" font-size="18">✉</text>
+  <text x="1060" y="295" text-anchor="middle" fill="#64748b" font-size="9">Inbox</text>
+
+  <line x1="980" y1="212" x2="1033" y2="212" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arr-green)" opacity="0.6"/>
+  <circle r="4" fill="#22c55e" filter="url(#glow-green)">
+    <animateMotion dur="1s" repeatCount="indefinite" begin="1.3s"><mpath href="#path-del-sms"/></animateMotion>
+  </circle>
+  <path id="path-del-sms" d="M980,212 L1033,212" fill="none"/>
+
+  <line x1="980" y1="282" x2="1033" y2="282" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arr-green)" opacity="0.6"/>
+  <circle r="4" fill="#22c55e" filter="url(#glow-green)">
+    <animateMotion dur="1s" repeatCount="indefinite" begin="1.8s"><mpath href="#path-del-email"/></animateMotion>
+  </circle>
+  <path id="path-del-email" d="M980,282 L1033,282" fill="none"/>
+
+  <rect x="200" y="440" width="160" height="50" rx="8" fill="#0c1a1a" stroke="#2dd4bf" stroke-width="1.5"/>
+  <text x="280" y="462" text-anchor="middle" fill="#5eead4" font-size="11" font-weight="bold">Observability</text>
+  <text x="280" y="478" text-anchor="middle" fill="#64748b" font-size="9">Prometheus Metrics + Grafana</text>
+
+  <line x1="280" y1="440" x2="280" y2="285" stroke="#2dd4bf" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-green)" opacity="0.6"/>
+  <text x="290" y="380" fill="#2dd4bf" font-size="9" opacity="0.7">scrapes /metrics</text>
+
+  <line x1="20" y1="520" x2="1120" y2="520" stroke="#1e293b" stroke-width="1"/>
+  <text x="570" y="540" text-anchor="middle" fill="#475569" font-size="10">Clean Architecture · Zero Data Loss · Decentralized Throttling</text>
+
+</svg>

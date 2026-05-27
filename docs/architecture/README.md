@@ -74,52 +74,7 @@ When a user triggers an event (e.g., a password reset), the system guarantees de
 
 Here is the lifecycle of a notification:
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant FastAPI
-    participant Redis
-    participant Postgres (PgBouncer)
-    participant Outbox Dispatcher
-    participant Redpanda
-    participant Channel Worker
-    participant Upstream Provider
-
-    Client->>FastAPI: POST /notifications (idempotency_key)
-    
-    %% Tier 1 Idempotency
-    FastAPI->>Redis: SETNX lock (Tier 1)
-    alt Lock exists
-        Redis-->>FastAPI: False
-        FastAPI-->>Client: 200 OK (Already Processed)
-    else Lock acquired
-        Redis-->>FastAPI: True
-        
-        %% Database Transaction
-        FastAPI->>Postgres (PgBouncer): BEGIN
-        FastAPI->>Postgres (PgBouncer): Check UNIQUE key (Tier 2)
-        FastAPI->>Postgres (PgBouncer): INSERT into notifications
-        FastAPI->>Postgres (PgBouncer): INSERT into outbox_events
-        FastAPI->>Postgres (PgBouncer): COMMIT
-        
-        Postgres (PgBouncer)-->>FastAPI: Success
-        FastAPI-->>Client: 200 OK (< 15ms)
-    end
-
-    %% Asynchronous Processing
-    loop Every 100ms
-        Outbox Dispatcher->>Postgres (PgBouncer): Poll outbox_events
-        Outbox Dispatcher->>Redpanda: Publish to channel topics (sms, email)
-        Outbox Dispatcher->>Postgres (PgBouncer): Delete from outbox_events
-    end
-
-    %% Delivery
-    Redpanda->>Channel Worker: Consume message
-    Channel Worker->>Upstream Provider: Send Payload (Twilio/SendGrid)
-    Upstream Provider-->>Channel Worker: 200 OK (Message ID)
-    Channel Worker->>Postgres (PgBouncer): Update notification status to DELIVERED
-
-```
+![Architecture Diagram](diagram.svg)
 
 ---
 
@@ -147,24 +102,38 @@ sequenceDiagram
 
 ---
 
-## 🏗️ 4. Future Architecture Improvements
+## 🚀 Future Enhancements & Production Hardening
 
-While the foundational architecture handles massive scale, the following mechanisms, if implemented can achieve better observability and long-term storage sustainability.
+While this architecture guarantees zero data loss and prevents thundering herds, pushing it to a true 99.99% SLA at 50M+ daily notifications requires graduating from a single-node Docker topology to a distributed cloud environment. 
 
-### 4.1. Distributed Tracing (OpenTelemetry)
+If this system were to be promoted to a Tier-1 production environment, the following architectural upgrades would need to be implemented:
 
-* **Current State:** Requests generate a `correlation_id` tracked via JSON logs.
-* **Problem:** Stitching together logs across API, Dispatcher, and Worker containers during a dropped-message investigation is manual.
-* **Solution:** Inject OpenTelemetry (OTel). The API will generate a Trace ID, propagate it into the Postgres Outbox JSON, push it into the Redpanda headers, and extract it in the worker. This allows tools like Jaeger or Grafana Tempo to visualize the exact microsecond latency of every hop in a single waterfall graph.
+### 1. High Availability (HA) Infrastructure Topology
+Currently, components like PgBouncer and PostgreSQL are running as single instances. 
+* **Database HA:** Implement PostgreSQL streaming replication with an auto-failover manager (e.g., Patroni).
+* **Redis HA:** Upgrade the single Redis instance to a Redis Cluster or Redis Sentinel deployment to ensure the distributed locks and rate limiters survive hardware failures.
+* **API Fleet:** Deploy the FastAPI application behind an AWS ALB or Kubernetes Ingress to horizontally scale ingestion across multiple availability zones.
 
-### 4.2. Database Table Partitioning
+### 2. Dispatcher Horizontal Scaling (`SKIP LOCKED`)
+A single `dispatcher_daemon` reading from the Postgres Outbox table creates a bottleneck at 2,000+ RPS. 
+* **Solution:** Implement PostgreSQL's `SELECT ... FOR UPDATE SKIP LOCKED` query in the dispatcher. This allows multiple dispatcher worker containers to query the outbox table concurrently without locking collisions, allowing the Outbox-to-Kafka relay to scale horizontally.
 
-* **Current State:** All events live in a single `notifications` table.
-* **Problem:** At 150 RPS, the system generates ~12 million rows a day. Within months, B-Tree indexes will exceed RAM capacity, severely degrading query performance.
-* **Solution:** Implement Postgres Native Partitioning. The `notifications` table will be partitioned by `created_at` (e.g., monthly). Old partitions can be archived to AWS S3 and dropped from the live database in milliseconds, ensuring the active working set always remains lean and fast.
+### 3. Distributed Tracing (OpenTelemetry)
+While JSON logs with `correlation_id` injection are present, tracing an asynchronous message through the API → Postgres Outbox → Dispatcher → Kafka → Worker is complex.
+* **Solution:** Implement the OpenTelemetry (OTel) SDK. Generate a Trace ID at the FastAPI middleware layer, inject it into the Postgres JSON payload, map it to the Redpanda message headers, and export the spans to Jaeger or Grafana Tempo for visual waterfall debugging.
 
-### 4.3. The DLQ Replay Mechanism
+### 4. Partition Keying for Strict Ordering
+Currently, messages are routed to Redpanda partitions round-robin or randomly. 
+* **Solution:** Map the `user_id` as the Kafka Message Key. This guarantees that multiple notifications meant for the same user (e.g., `Order Created` followed by `Order Shipped`) will always land on the exact same partition, guaranteeing strict chronological processing by the workers.
 
-* **Current State:** Poison-pill messages (e.g., exceeding 5 Twilio API failures) are safely routed to a Redpanda Dead Letter Queue (`dlq.notifications`) to prevent queue blockage.
-* **Problem:** Messages in the DLQ are currently stagnant.
-* **Solution:** Build a secured Replay Utility (Admin API endpoint or CLI tool) that can bulk-read the DLQ, reset retry counters, and inject the payloads back into the primary channel topics once upstream provider stability is confirmed.
+### 5. DLQ Replay Utility
+Chaos testing proves that isolated failures (e.g., Twilio 503s) safely route messages to the Dead Letter Queue (`notification.dlq`). However, those messages currently remain parked.
+* **Solution:** Build a secured administrative CLI or API endpoint that consumes from the DLQ and re-publishes the payloads back into the primary topics once the downstream provider's outage is resolved.
+
+### 6. Database Table Partitioning
+At 2,000 requests per second, the PostgreSQL `notifications` table will generate ~50 million rows per month, eventually degrading B-Tree index performance.
+* **Solution:** Implement PostgreSQL Native Table Partitioning by `created_at` (e.g., monthly partitions). This allows rapid querying of active notifications and enables the operations team to archive or drop 6-month-old partitions in milliseconds (Cold Storage).
+
+### 7. API Gateway & Authentication
+The current ingestion endpoints are unprotected to simplify local load testing.
+* **Solution:** Place the service behind an API Gateway (e.g., Kong, AWS API Gateway) and implement OAuth2 or JWT-based authentication. The gateway would handle token validation and tenant identification before traffic reaches the Python layer.
