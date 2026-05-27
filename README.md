@@ -1,10 +1,24 @@
 # Scalable Notification Gateway
 
+
+![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Production-009688?logo=fastapi&logoColor=white)
+![Redpanda](https://img.shields.io/badge/Redpanda-Kafka_Compatible-black?logo=apachekafka&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Tier_2_Storage-4169E1?logo=postgresql&logoColor=white)
+![PgBouncer](https://img.shields.io/badge/PgBouncer-Connection_Pooler-336791?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-Tier_1_Locks-DC382D?logo=redis&logoColor=white)
+![Docker Compose](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)
+![Architecture](https://img.shields.io/badge/Pattern-Transactional_Outbox-8A2BE2)
+![Architecture](https://img.shields.io/badge/Pattern-Clean_Architecture-4B0082)
+
+
 A production-grade, highly resilient notification ingestion and delivery engine built as an advanced distributed systems portfolio project. Engineered with **Clean Architecture**, this platform handles multi-channel delivery (SMS, Email, Push), dynamic user preference routing, guaranteed at-least-once execution via the Transactional Outbox Pattern, Two-Tier Idempotency, and survives catastrophic infrastructure failures through Chaos-tested self-healing mechanisms.
 
 ---
 
 ## Architecture
+
+![Architecture Diagram](./docs/architecture/diagram.svg)
 
 > Full architectural blueprint, lifecycle traces, and design justifications: [docs/architecture/README.md](./docs/architecture/README.md)
 
